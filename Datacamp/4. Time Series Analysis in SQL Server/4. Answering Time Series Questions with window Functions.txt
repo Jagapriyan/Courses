@@ -1,0 +1,619 @@
+Using Aggregation functions over windows
+
+Sometimes, we would like to see the end results of aggregation without changing the grain of our data. 
+There are four ranking window functions which SQL server supports
+
+ROW_NUMBER()
+
+It provides a guaranteed unique, ascending integer value which starts from 1 and continues through the end of the set. 
+
+RANK()
+It provides an ascending integer value which starts from 1, but it is not guaranteed to be unique. 
+Instead, any ties in the window will get the same value and then the next value gets its 'ROW NUMBER()' value. It will skip numbers. 
+if, for example, the second and third entries are tied, both will get rank of 2 and the fourth entry will get a rank of 4. 
+
+
+DENSE_RANK()
+It behaves like 'RANK()' except that it does not skip numbers even with ties. 
+if the second and third entries are tied, both will get a dense rank of 2 and the fourth entry will get a dense rank of 3. 
+
+NTILE()
+
+
+All ranking functions require an OVER() clause with an ORDER BY clause inside it. 
+
+
+ROW_NUMBER - We are ordering results by the number of runs scored in descending. We get back is a unique ascending integer starting from 1. 
+
+SELECT 
+	batsman,
+	total_runs,
+	ROW_NUMBER() OVER(
+	ORDER BY total_runs DESC	
+	) AS row_number
+FROM dbo.runs
+ORDER BY total_runs DESC
+
+batsman		total_runs	row_number
+
+V Kohli		5426		1
+SK Raina	5386		2
+RG Sharma	4902		3
+DA Warner	4717		4
+
+
+
+All ranking functions have the same syntax. 
+Here the RANK() and DENSE_RANK() together looking the same as ROW_NUMBER did. 
+The difference is in the results. ROW_NUMBER gives us one unique integer per record.
+The difference between RANK() and DENSE_RANK() is how ties behave. 
+
+
+
+SELECT
+	batsman,
+	total_runs,
+	RANK() OVER(
+		ORDER BY total_runs DESC
+		) AS ranking,
+	DENSE_RANK() OVER(
+		ORDER BY total_runs DESC
+	) AS dense_ranking
+		FROM dbo.runs 
+		ORDER BY total_runs DESC
+
+
+In addition to an ORDER BY clause, the OVER() clause in a window function can accpet a PARTITION BY clause which splits up the window by some column or set of columns. 
+
+Now we will introduce the teams who played and partition runs scored by them. 
+
+Note that each team's rank reset to 1. PARTITION BY clause defines the window. 
+
+SELECT 
+	Player,
+	Team,
+	Runs_Scored,
+	RANK() OVER(
+		PARTITION BY Team
+		ORDER BY Runs_Scored DESC
+	) AS Ranking
+FROM dbo.iplstats
+WHERE Runs_Scored > 500
+ORDER BY Team ASC;
+
+
+Player		Team							Runs_Scored		Ranking
+AT Rayudu	Chennai Super Kings				602				1
+SR Watson	Chennai Super Kings				555				2
+S Dhawan	Delhi Capitals					521				1
+RR Pant	Delhi Daredevils					684				1
+KL Rahul	Kings XI Punjab					659				1
+KL Rahul	Kings XI Punjab					593				2
+AD Russell	Kolkata Knight Riders			510				1
+G Gambhir	Kolkata Knight Riders			501				2
+Q de Kock	Mumbai Indians					529				1
+SA Yadav	Mumbai Indians					512				2
+JC Buttler	Rajasthan Royals				548				1
+V Kohli	Royal Challengers Bangalore			973				1
+AB de Villiers	Royal Challengers Bangalore	687				2
+V Kohli	Royal Challengers Bangalore			530				3
+DA Warner	Sunrisers Hyderabad				848				1
+KS Williamson	Sunrisers Hyderabad			735				2
+DA Warner	Sunrisers Hyderabad				692				3
+DA Warner	Sunrisers Hyderabad				641				4
+S Dhawan	Sunrisers Hyderabad				501				5
+
+
+
+
+In addition to ranking functions, we can also use window on aggregate functions. 
+
+
+Aggregate Functions
+
+SELECT 
+	Player,
+	Team,
+	MAX(Runs_Scored)
+		OVER(
+		PARTITION BY Team
+		ORDER BY Runs_Scored DESC
+	) AS Max_Runs
+FROM dbo.iplstats
+ORDER BY Runs_Scored ASC;
+
+
+
+Aggregate function with an emplty 'OVER()' clause does the same thing as the non-windowed aggregae function, except for one difference: it does not require that we group by non-aggregated columns. 
+Below example is use of 'MAX()' function with an empty 'OVER()' clause. 
+We will get back every single row as well as the maximum number of runs scored. 
+This is akin to writing a subquery or common table expression which queries the data twice. Once to get the individual rows and a second time to get the maximum number of runs. 
+
+
+SELECT 
+	Player,
+	Team,
+	MAX(Runs_Scored)
+		OVER() AS Max_Runs
+FROM dbo.iplstats
+ORDER BY Runs_Scored ASC;
+
+
+
+Excercise
+
+In this exercise, we would like to determine how frequently each we see incident type 3 in our data set. 
+We would like to rank the number of incidents in descending order, such that the date with the highest number of incidents has a row number, rank, and dense rank of 1, and so on.
+ To make it easier to follow, we will only include dates with at least 8 incidents.
+ 
+ Instructions
+ 
+Fill in each window function based on the column alias. You should include ROW_NUMBER(), RANK(), and DENSE_RANK() exactly once.
+Fill in the OVER clause ordering by ir.NumberOfIncidents in descending order.
+ 
+ 
+ 
+ SELECT
+	ir.IncidentDate,
+	ir.NumberOfIncidents,
+    -- Fill in each window function and ordering
+    -- Note that all of these are in descending order!
+	ROW_NUMBER() OVER (ORDER BY ir.NumberOfIncidents DESC) AS rownum,
+	RANK() OVER (ORDER BY ir.NumberOfIncidents DESC) AS rk,
+	DENSE_RANK() OVER (ORDER BY ir.NumberOfIncidents DESC) AS dr
+FROM dbo.IncidentRollup ir
+WHERE
+	ir.IncidentTypeID = 3
+	AND ir.NumberOfIncidents >= 8
+ORDER BY
+	ir.NumberOfIncidents DESC;
+	
+	
+
+Aggregate window functions
+
+There are several aggregate window functions available to you. In this exercise, we will look at reviewing multiple aggregates over the same window.
+
+Our window this time will be the entire data set, meaning that our OVER() clause will remain empty.
+
+
+Instructions
+
+Fill in the correct aggregate function for each column in the result set.
+
+SELECT
+	ir.IncidentDate,
+	ir.NumberOfIncidents,
+    -- Fill in the correct aggregate functions
+    -- You do not need to fill in the OVER clause
+	SUM(ir.NumberOfIncidents) OVER () AS SumOfIncidents,
+	MIN(ir.NumberOfIncidents) OVER () AS LowestNumberOfIncidents,
+	MAX(ir.NumberOfIncidents) OVER () AS HighestNumberOfIncidents,
+	COUNT(ir.NumberOfIncidents) OVER () AS CountOfIncidents
+FROM dbo.IncidentRollup ir
+WHERE
+	ir.IncidentDate BETWEEN '2019-07-01' AND '2019-07-31'
+AND ir.IncidentTypeID = 3;
+
+
+Calculating Running totals and Moving averages
+
+
+Using window function, we can calculate running totals and moving averages.
+In following example, Calculate an ongoing tally by season for each player.
+
+SELECT 
+	Player,
+	Team,
+	Tournament,
+	Runs_Scored,
+	SUM(Runs_Scored) OVER (
+	PARTITION BY Player
+	ORDER BY Tournament ASC
+	RANGE BETWEEN
+	UNBOUNDED PRECEDING
+	AND CURRENT ROW
+	) AS Total_Runs
+FROM dbo.iplstats
+
+Sample Output
+
+Player			Team						Tournament	Runs_Scored		Total_Runs
+AB de Villiers	Royal Challengers Bangalore	IPL 2016	687				687
+AB de Villiers	Royal Challengers Bangalore	IPL 2017	216				903
+AB de Villiers	Royal Challengers Bangalore	IPL 2018	480				1383
+AB de Villiers	Royal Challengers Bangalore	IPL 2019	442				1825
+
+
+We need to know the per tournament value
+Then we wan to know the running total - we need to use the sum function
+This has to be a window function. Becuase that's the way we will get both the detail records and the aggregated running total in the same query, so we will need an 'OVER()' clause.
+Inside the OVER() clause, we want to partition our running totals by tournament for each player
+Then we have to give SQL server the appropriate expression for ordering. We will order by Tournament year. 
+The next part is a choice between RANGE and ROWS. For this query we want the RANGE.
+We need to know the preceeding expression. How far back do we want to look? For a running total, we want to go back to the beginning of our set, so we use 'UNBOUNDED PRECEDING'
+Finally we add the window following expression, which in this case is the current row: don't look any further than the present row when summing things up. That will give running total.
+
+
+RANGE												ROWS
+Specify a range of results						Specify number of rows to include
+"Duplicates" processed all at once				"Duplicates" processed a row at a time
+Only supports UNBOUNDED and CURRENT ROW			Supports UNBOUNDED, CURRENT ROW and number of rows. 
+
+
+
+
+Moving Average
+
+Consider the current and prior tournaments when calculating moving average. 
+
+SELECT 
+	Player,
+	Team,
+	Tournament,
+	Runs_Scored,
+	AVG(Runs_Scored) OVER (
+	PARTITION BY Player
+	ORDER BY Tournament ASC
+	ROWS BETWEEN 1 PRECEDING
+	AND CURRENT ROW
+	) AS Avg_Runs
+FROM dbo.iplstats
+
+
+Player			Team						Tournament	Runs_Scored		Average_Runs
+AB de Villiers	Royal Challengers Bangalore	IPL 2016	687				687
+AB de Villiers	Royal Challengers Bangalore	IPL 2017	216				451
+AB de Villiers	Royal Challengers Bangalore	IPL 2018	480				348
+AB de Villiers	Royal Challengers Bangalore	IPL 2019	442				461
+
+
+Excercise
+
+Running totals with SUM()
+One of the more powerful uses of window functions is calculating running totals: an ongoing tally of a particular value over a given stretch of time.
+ Here, we would like to use a window function to calculate how many incidents have occurred on each date and incident type in July of 2019 as well as a running tally of the total number of incidents by incident type.
+ A window function will help us solve this problem in one query.
+ 
+ 
+Fill in the correct window function.
+Fill in the PARTITION BY clause in the window function, partitioning by incident type ID.
+Fill in the ORDER BY clause in the window function, ordering by incident date (in its default, ascending order).
+
+
+SELECT
+	ir.IncidentDate,
+	ir.IncidentTypeID,
+	ir.NumberOfIncidents,
+    -- Get the total number of incidents
+	SUM(ir.NumberOfIncidents) OVER (
+      	-- Do this for each incident type ID
+		PARTITION BY ir.IncidentTypeID
+      	-- Sort by the incident date
+		ORDER BY ir.IncidentDate
+	) AS NumberOfIncidents
+FROM dbo.IncidentRollup ir
+	INNER JOIN dbo.Calendar c
+		ON ir.IncidentDate = c.Date
+WHERE
+	c.CalendarYear = 2019
+	AND c.CalendarMonth = 7
+	AND ir.IncidentTypeID IN (1, 2)
+ORDER BY
+	ir.IncidentTypeID,
+	ir.IncidentDate;
+	
+	
+Investigating window frames
+In addition to the PARTITION BY and ORDER BY clauses, window functions can include frames which tell the database engine what we include as relevant to the window.
+
+Here we will look at four different frames to understand how the results would differ. For each example, we want to fill in the window frame for the following query:
+
+
+
+
+
+
+Calculating moving averages
+Instead of looking at a running total from the beginning of time until now, management would like to see the average number of incidents over the past 7 days--that is, starting 6 days ago and ending on the current date. Because this is over a specified frame which changes over the course of our query, this is called a moving average.
+
+SQL Server does not have the ability to look at ranges of time in window functions, so we will need to assume that there is one row per day and use the ROWS clause.
+
+
+Fill in the correct window function to perform a moving average starting from 6 days ago through today (the current row).
+Fill in the window frame, including the ROWS clause, window frame preceding, and window frame following.
+
+
+SELECT
+	ir.IncidentDate,
+	ir.IncidentTypeID,
+	ir.NumberOfIncidents,
+    -- Fill in the correct window function
+	AVG(ir.NumberOfIncidents) OVER (
+		PARTITION BY ir.IncidentTypeID
+		ORDER BY ir.IncidentDate
+      	-- Fill in the three parts of the window frame
+		ROWS BETWEEN 6 PRECEDING  AND CURRENT ROW
+	) AS MeanNumberOfIncidents
+FROM dbo.IncidentRollup ir
+	INNER JOIN dbo.Calendar c
+		ON ir.IncidentDate = c.Date
+WHERE
+	c.CalendarYear = 2019
+	AND c.CalendarMonth IN (7, 8)
+	AND ir.IncidentTypeID = 1
+ORDER BY
+	ir.IncidentTypeID,
+	ir.IncidentDate;
+	
+
+Working with LAG() and LEAD()
+
+The LAG() and LEAD() function give us the ability to link together past, present and future in the same query. 
+LAG() gives prior row in a window given a particular partition strategy and ordering. 
+It looks a lot like an aggregate window function, where it takes in as a parameter an expression
+
+
+SELECT Player,
+	   Matches, 
+	   Batting_Innings,
+	   Runs_Scored,
+	   LAG(Runs_Scored) OVER (PARTITION BY Player ORDER BY Tournament) AS Runs_Previous_Tournament
+FROM dbo.iplstats;
+
+Player			Matches Innings		Runs   Runs_Previous_Tournament
+AB de Villiers	16		16			687		NULL
+AB de Villiers	9		9			216		687
+AB de Villiers	12		11			480		216
+AB de Villiers	13		13			442		480
+
+
+
+The LEAD() window function is just like LAG() except that it looks at the next record instead of the prior record. 
+The result will be current tournament's run and next tournament's runs. 
+Once we reach the end of the dataset, the final output will be NULL. 
+
+
+
+SELECT Player,
+	   Matches, 
+	   Batting_Innings,
+	   Runs_Scored,
+	   LEAD(Runs_Scored) OVER (PARTITION BY Player ORDER BY Tournament) AS Runs_Previous_Tournament
+FROM dbo.iplstats;
+
+
+BOTH LAG() AND LEAD() takes an optional second parameter which represents the number of rows back to look.
+
+SELECT Player,
+	   Matches, 
+	   Batting_Innings,
+	   Runs_Scored,
+	   LAG(Runs_Scored, 1) OVER (PARTITION BY Player ORDER BY Tournament) AS Runs_Previous_Tournament,
+	   LAG(Runs_Scored, 2) OVER (PARTITION BY Player ORDER BY Tournament) AS Runs_Previous_Tournament
+FROM dbo.iplstats;
+
+
+Note:
+
+In Window function, the LAG() AND LEAD() are executed after the filter. i.e WHERE clause. 
+When we use, Dates in filter, the filtered out dates are thrown out and may return NULL values. 
+If we want to preserve these prior values, there are few ways we can do this. One method is to use CTE (Common Table Expression)
+
+
+
+
+SELECT Player,
+	   Matches, 
+	   Batting_Innings,
+	   Runs_Scored,
+	   LAG(Runs_Scored, 1) OVER (PARTITION BY Player ORDER BY Tournament) AS Runs_Previous_Tournament,
+	   LAG(Runs_Scored, 2) OVER (PARTITION BY Player ORDER BY Tournament) AS Runs_Previous_Tournament
+FROM dbo.iplstats
+WHERE
+	Runs_Scored > 200;
+	
+
+Exercise
+
+Seeing prior and future periods
+
+The LAG() and LEAD() window functions give us the ability to look backward or forward in time, respectively. This gives us the ability to compare period-over-period data in a single, easy query.
+In this exercise, we want to compare the number of security incidents by day for incident types 1 and 2 during July of 2019, specifically the period starting on July 2nd and ending July 31st.
+
+Fill in the window function to return the prior day's number of incidents, partitioned by incident type ID and ordered by the incident date.
+Fill in the window function to return the next day's number of incidents, partitioned by incident type ID and ordered by the incident date.
+
+SELECT
+	ir.IncidentDate,
+	ir.IncidentTypeID,
+    -- Get the prior day's number of incidents
+	LAG(ir.NumberOfIncidents, 1) OVER (
+      	-- Partition by incident type ID
+		PARTITION BY ir.IncidentTypeID
+      	-- Order by incident date
+		ORDER BY ir.IncidentDate
+	) AS PriorDayIncidents,
+	ir.NumberOfIncidents AS CurrentDayIncidents,
+    -- Get the next day's number of incidents
+	LEAD(ir.NumberOfIncidents, 1) OVER (
+      	-- Partition by incident type ID
+		PARTITION BY ir.IncidentTypeID
+      	-- Order by incident date
+		ORDER BY ir.IncidentDate
+	) AS NextDayIncidents
+FROM dbo.IncidentRollup ir
+WHERE
+	ir.IncidentDate >= '2019-07-02'
+	AND ir.IncidentDate <= '2019-07-31'
+	AND ir.IncidentTypeID IN (1, 2)
+ORDER BY
+	ir.IncidentTypeID,
+	ir.IncidentDate;
+	
+	
+Seeing the prior three periods
+The LAG() and LEAD() window functions give us the ability to look backward or forward in time, respectively. This gives us the ability to compare period-over-period data in a single, easy query. Each call to LAG() or LEAD() returns either a NULL or a single row. 
+If you want to see multiple periods back, you can include multiple calls to LAG() or LEAD().
+
+
+Fill in the SQL to return the number of incidents from two periods ago.
+Fill in the SQL to return the number of incidents from the prior period.
+Fill in the SQL to return the number of incidents from the next period.
+
+
+SELECT
+	ir.IncidentDate,
+	ir.IncidentTypeID,
+    -- Fill in two periods ago
+	LAG(ir.NumberOfIncidents, 2) OVER (
+		PARTITION BY ir.IncidentTypeID
+		ORDER BY ir.IncidentDate
+	) AS Trailing2Day,
+    -- Fill in one period ago
+	LAG(ir.NumberOfIncidents, 1) OVER (
+		PARTITION BY ir.IncidentTypeID
+		ORDER BY ir.IncidentDate
+	) AS Trailing1Day,
+	ir.NumberOfIncidents AS CurrentDayIncidents,
+    -- Fill in next period
+	LEAD(ir.NumberOfIncidents, 1) OVER (
+		PARTITION BY ir.IncidentTypeID
+		ORDER BY ir.IncidentDate
+	) AS NextDay
+FROM dbo.IncidentRollup ir
+WHERE
+	ir.IncidentDate >= '2019-07-01'
+	AND ir.IncidentDate <= '2019-07-31'
+	AND ir.IncidentTypeID IN (1, 2)
+ORDER BY
+	ir.IncidentTypeID,
+	ir.IncidentDate;
+	
+	
+Calculating days elapsed between incidents
+Something you might have noticed in the prior two exercises is that we don't always have incidents on every day of the week, so calling LAG() and LEAD() the "prior day" is a little misleading; it's really the "prior period." Someone in management noticed this as well and, at the end of July, wanted to know the number of days between incidents. To do this, we will calculate two values: the number of days since the prior incident and the number of days until the next incident.
+
+Recall that DATEDIFF() gives the difference between two dates. We can combine this with LAG() and LEAD() to get our results.
+
+Calculate the days since the last incident using a combination of DATEDIFF() and LAG() or LEAD().
+Calculate the days until the next incident using a combination of DATEDIFF() and LAG() or LEAD().
+NOTE: you will not need to use the NumberOfIncidents column in this exercise.
+
+SELECT
+	ir.IncidentDate,
+	ir.IncidentTypeID,
+    -- Fill in the days since last incident
+	DATEDIFF(DAY, LAG(ir.IncidentDate, 1) OVER (
+		PARTITION BY ir.IncidentTypeID
+		ORDER BY ir.IncidentDate
+	), ir.IncidentDate) AS DaysSinceLastIncident,
+    -- Fill in the days until next incident
+	DATEDIFF(DAY, ir.IncidentDate, LEAD(ir.IncidentDate, 1) OVER (
+		PARTITION BY ir.IncidentTypeID
+		ORDER BY ir.IncidentDate
+	)) AS DaysUntilNextIncident
+FROM dbo.IncidentRollup ir
+WHERE
+	ir.IncidentDate >= '2019-07-02'
+	AND ir.IncidentDate <= '2019-07-31'
+	AND ir.IncidentTypeID IN (1, 2)
+ORDER BY
+	ir.IncidentTypeID,
+	ir.IncidentDate;
+	
+	
+Finding Maximum Levels of Overlap
+
+Consider a scenario where we keep track of time people enter and leave as well as the number of products they order. 
+We would like to make use of this data to determine how many staff we should have in our stores. 
+The way to do this is to count the maximum number of people in the store at any one time. 
+
+To do this, we have separate the start and end point into separate rows so that we have an event per entrance and an event per exit.
+
+
+Excercise
+
+Analyze client data for potential fraud
+In this final set of exercises, we will analyze day spa data to look for potential fraud. Our company gives each customer one pass for personal use and a single guest pass. We have check-in and check-out data for each client and guest passes tie back to the base customer ID. This means that there might be overlap when a client and guest both check in together. We want to see if there are at least three overlapping entries for a single client, as that would be a violation of our business rule.
+
+The key to thinking about overlapping entries is to unpivot our data and think about the stream of entries and exits. We will do that first.
+
+
+Split out start events and end events.
+
+Fill in the customer's visit start date (dsv.CustomerVisitStart) as TimeUTC in the "entrances" part of the query.
+Fill in the window function that we alias as StartStopPoints to give us the stream of check-ins for each customer, ordered by their visit start date.
+Fill in the customer's visit end date (dsv.CustomerVisitEnd) as TimeUTC in the "departures" part of the query.
+
+-- This section focuses on entrances:  CustomerVisitStart
+SELECT
+	dsv.CustomerID,
+	dsv.CustomerVisitStart AS TimeUTC,
+	1 AS EntryCount,
+    -- We want to know each customer's entrance stream
+    -- Get a unique, ascending row number
+	ROW_NUMBER() OVER (
+      -- Break this out by customer ID
+      PARTITION BY dsv.CustomerID
+      -- Ordered by the customer visit start date
+      ORDER BY dsv.CustomerVisitStart
+    ) AS StartOrdinal
+FROM dbo.DaySpaVisit dsv
+UNION ALL
+-- This section focuses on departures:  CustomerVisitEnd
+SELECT
+	dsv.CustomerID,
+	dsv.CustomerVisitEnd AS TimeUTC,
+	-1 AS EntryCount,
+	NULL AS StartOrdinal
+FROM dbo.DaySpaVisit dsv
+
+
+Build a stream of events
+In the prior exercise, we broke out day spa data into a stream of entrances and exits. Unpivoting the data allows us to move to the next step, which is to order the entire stream.
+
+The results from the prior exercise are now in a temporary table called #StartStopPoints. The columns in this table are CustomerID, TimeUTC, EntryCount, and StartOrdinal. 
+These are the only columns you will need to use in this exercise. TimeUTC represents the event time, EntryCount indicates the net change for the event (+1 or -1), and StartOrdinal appears for entrance events and gives the order of entry.
+
+
+Fill out the appropriate window function (ROW_NUMBER()) to create a stream of check-ins and check-outs in chronological order.
+Partition by the customer ID to calculate a result per user.
+Order by the event time and solve ties by using the start ordinal value.
+
+SELECT s.*,
+    -- Build a stream of all check-in and check-out events
+	ROW_NUMBER() OVER (
+      -- Break this out by customer ID
+      PARTITION BY s.CustomerID
+      -- Order by event time and then the start ordinal
+      -- value (in case of exact time matches)
+      ORDER BY s.TimeUTC, s.EntryCount
+    ) AS StartOrEndOrdinal
+FROM #StartStopPoints s;
+
+
+
+Complete the fraud analysis
+So far, we have broken out day spa data into a stream of entrances and exits and ordered this stream chronologically. This stream contains two critical fields, StartOrdinal and StartOrEndOrdinal. StartOrdinal is the chronological ordering of all entrances. StartOrEndOrdinal contains all entrances and exits in order. Armed with these two pieces of information, we can find the maximum number of concurrent visits.
+
+The results from the prior exercise are now in a temporary table called #StartStopOrder.
+
+Fill out the HAVING clause to determine cases with more than 2 concurrent visitors.
+Fill out the ORDER BY clause to show management the worst offenders: those with the highest values for MaxConcurrentCustomerVisits.
+
+
+SELECT
+	s.CustomerID,
+	MAX(2 * s.StartOrdinal - s.StartOrEndOrdinal) AS MaxConcurrentCustomerVisits
+FROM #StartStopOrder s
+WHERE s.EntryCount = 1
+GROUP BY s.CustomerID
+-- The difference between 2 * start ordinal and the start/end
+-- ordinal represents the number of concurrent visits
+HAVING MAX(2 * s.StartOrdinal - s.StartOrEndOrdinal) > 2
+-- Sort by the largest number of max concurrent customer visits
+ORDER BY MaxConcurrentCustomerVisits;
+
+
+

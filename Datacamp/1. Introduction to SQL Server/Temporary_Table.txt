@@ -1,0 +1,17 @@
+Imagine we have written a query, joning information from different tables, with nicely aliased column names. 
+It would be great if this was a table that we could use for further work.
+In this case, we can create a temporary table and once we have created it, it's available for further querying for the remainder of our session.
+The temporary table will exist until either our connection or session ends or we manually remove with 'DROP TABLE' statement. 
+
+We write our SELECT query, but in between SELECT and FROM, we use the keyword INTO, and then type our desired table name, prefaced by the hash(#) sign.
+
+
+
+SELECT
+col1,
+col2,
+col3 INTO #my_temp_table
+FROM my_existing_table
+WHERE
+-- conditions
+

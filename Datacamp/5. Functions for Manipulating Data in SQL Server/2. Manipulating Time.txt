@@ -1,0 +1,417 @@
+Functions that return system date and time
+
+Storing data inside a database barely has any value without attaching a date or time dimension to it.
+
+Common mistakes when working with dates and time
+
+-> inconsistent date tiem formats or patterns ex: entering DD-MM-YYYY while DB expects MM-DD-YYYY
+-> Arithmetic operations on date types sometimes produce a different result than what we would expect.
+-> Issues with time zones
+
+These unexpected results are not caused by poor data type management in the DB Engine but by using the wrong type or function and expecting the right results. 
+
+Time Zones in SQL Server
+
+The results returned by date and time functions are usually in your local timezone.
+UTC (Universal Time Coordinate) time zone. If the functions contain the UTC abbreviation in them, the result represent UTC.
+ 
+Functions that return the date and time of the operating system (meaning OS installed on same computer as SQL Server)
+
+Based on degree of accuracy, these are split in two categories
+
+High-precision - measured by fractional seconds precision 
+
+SYSDATETIME() - returns the computer's date and time, without timezone information
+SYSUTCDATETIME() - returns the computer's date and time as UTC
+SYSDATETIMEOFFSET() - returns the computer's time including the difference form UTC in hours
+
+Less exact functions / Less precise functions
+
+GETDATE() - returns the current date
+GETUTCDATE() - returning the date as UTC
+CURRENT_TIMESTAMP - equivalent with GETDATE(), only difference is it is called without any parameter, so without parentheses. 
+
+
+
+SELECT
+-- HIGH PRECISION
+SYSDATETIME() AS [SYSDATE],
+SYSDATETIMEOFFSET() AS [SYSDATETIMEOFFSET],
+SYSUTCDATETIME() AS [SYSUTCDATETIME],
+-- LOW PRECISION
+GETDATE() AS [GETDATE],
+GETUTCDATE() AS [GETUTCDATE],
+CURRENT_TIMESTAMP AS [CURRENT_TIMESTAMP]
+
+
+Retrieving only the date
+
+To retrieve only the date, we can use any of the system date and time functions, regardless of their precision and explicitly convert the result to a date.
+ 
+
+SELECT
+-- retrieving only date
+CONVERT (date, SYSDATETIME()) AS [SYSDATETIME],
+CONVERT (date, SYSUTCDATETIME()) AS [SYSUTCDATE],
+CONVERT (date, SYSDATETIMEOFFSET()) AS [SYSDATETIMEOFFSET],
+CONVERT (date, GETDATE()) AS [GETDATE],
+CONVERT (date, GETUTCDATE()) AS [GETUTCDATE],
+CONVERT (date, CURRENT_TIMESTAMP) AS [CURRENT_TIMESTAMP]
+
+The results are same, unless it's past midnight in one timezone and before midnight in UTC or the otherway around. 
+
+
+Retrieving only the time
+
+SELECT
+-- retrieving only date
+CONVERT (time, SYSDATETIME()) AS [SYSDATETIME],
+CONVERT (time, SYSUTCDATETIME()) AS [SYSUTCDATE],
+CONVERT (time, SYSDATETIMEOFFSET()) AS [SYSDATETIMEOFFSET],
+CONVERT (time, GETDATE()) AS [GETDATE],
+CONVERT (time, GETUTCDATE()) AS [GETUTCDATE],
+CONVERT (time, CURRENT_TIMESTAMP) AS [CURRENT_TIMESTAMP]
+
+
+Exercise
+Selecting parts of the system's date and time
+In this exercise, you will retrieve only parts of the system's date and time, 
+focusing on only the date or only the time. You will use the same date and time functions, 
+but you will use CAST() and CONVERT() to transform the results to a different data type.
+
+
+Use two functions to query the system's local date, without timezone information. Show the dates in different formats.
+
+SELECT 
+	CONVERT(VARCHAR(24), SYSDATETIME(), 107) AS HighPrecision,
+	CONVERT(VARCHAR(24), GETDATE(), 102) AS LowPrecision;
+	
+	
+Use two functions to retrieve the current time, in Universal Time Coordinate.
+
+SELECT 
+	CAST(SYSUTCDATETIME() AS time) AS HighPrecision,
+	CAST(GETUTCDATE() AS time) AS LowPrecision;
+	
+--------------------------------------------------------------------------------------
+
+Functions returning date and time parts
+
+YEAR(date) - returns year from the specified date
+MONTH(date) - returns month from the specified date. The result will be in integer.
+DAY(date) - returns day in integer from the specified date. 
+
+Example
+
+SELECT
+first_name,
+first_vote_date,
+YEAR(first_vote_date) AS first_vote_year,
+MONTH(first_vote_date) AS first_vote_month,
+DAY(first_vote_date) AS first_vote_date
+FROM voters
+
+
+DATENAME(datepart, date) - returns a character string representing the specified part of the given date.
+For the datepart parameter we can use the name or an abbreviation like in the below table. 
+
+datepart abbreviations
+year		yy, yyyy
+month		mm, m
+dayofyear	dy,y
+week		wk,ww
+weekday		dw,w
+
+Example
+
+DECLARE @date datetime = GETDATE()
+SELECT
+DATENAME(YEAR, @date) AS date_year,
+DATENAME(MONTH, @date) AS date_month,
+DATENAME(DAY, @date) AS date_day,
+DATENAME(WEEKDAY, @date) AS weekday
+
+
+DATEPART(datepart, date) 
+
+similar to DATENAME()
+the difference is it returns an integer representing the specified part of the given date. 
+
+Example to compare both
+
+DECLARE @date datetime = GETDATE()
+SELECT
+DATENAME(WEEKDAY, @date) AS weekday,
+DATEPART(WEEKDAY, @date) AS weekday_in_number
+
+
+DATEFROMPARTS(year,month,day)
+
+receives 3 parameters: year,month,and day values
+Generates a date. returns a date data type. 
+
+DECLARE @date datetime = GETDATE()
+SELECT
+@date AS original_date,
+YEAR(@date) AS date_year,
+MONTH(@date) AS date_month,
+DAY(@date) AS day_month,
+DATEFROMPARTS (YEAR(@date),MONTH(@date),DAY(@date)) AS reconstructed_date
+
+Exercise
+
+In this exercise, you will use both of these functions to select the month and weekday of the first_vote_date in different forms.
+
+Extract the month number of the first vote.
+Extract the month name of the first vote.
+Extract the weekday number of the first vote.
+Extract the weekday name of the first vote.
+
+SELECT 
+	first_name,
+	last_name,
+   	-- Extract the month number of the first vote
+	DATEPART(MONTH,first_vote_date) AS first_vote_month1,
+	-- Extract the month name of the first vote
+    DATENAME(MONTH,first_vote_date) AS first_vote_month2,
+	-- Extract the weekday number of the first vote
+	DATEPART(WEEKDAY,first_vote_date) AS first_vote_weekday1,
+    -- Extract the weekday name of the first vote
+	DATENAME(WEEKDAY,first_vote_date) AS first_vote_weekday2
+FROM voters;
+
+--------------------------------------------------------------------------
+
+Performing arithmetic operations on dates
+
+Arithmetic operations on dates include adding an interval to a date, subtracting a date from another one and interpreting the difference. 
+Performing arithmetic operations directly on dates is possible. However the result will not be as expected. 
+We can use date functions for doing this. 
+
+DATEADD()
+We add a date part to a date and the result will be a new date.
+
+DATEADD(datepart,number,date)
+
+
+DATEDIFF() 
+allows you to find the difference in time units between two dates. 
+
+DATEDIFF(datepart,startdate,enddate)
+
+
+
+SELECT 
+DATEADD(YEAR,5,birthdate) AS fifth_birthday,
+DATEADD(YEAR,-5,birthdate) AS five_years_ago,
+DATEADD(DAY,+30,birthdate) AS plus_30_days,
+DATEDIFF(YEAR,birthdate,GETDATE()) AS Age,
+DATEDIFF(YEAR,birthdate,first_vote_date) AS Age_on_voting
+DATEDIFF(QUARTER,birthdate,first_vote_date) AS Age_on_Quarters
+FROM voters;
+
+we can use even minutes and hours. 
+
+
+Exercise
+
+Retrieve the date when each voter had their 18th birthday.
+
+SELECT 
+	first_name,
+	birthdate,
+    -- Add 18 years to the birthdate
+	DATEADD(YEAR, +18, birthdate) AS eighteenth_birthday
+  FROM voters;
+  
+  
+Add five days to the first_vote_date, to calculate the date when the vote was processed.
+
+SELECT 
+	first_name,
+	first_vote_date,
+    -- Add 5 days to the first voting date
+	DATEADD(DAY,5,first_vote_date) AS processing_vote_date
+  FROM voters;
+  
+  
+ Calculate what day it was 476 days ago.
+ 
+ SELECT
+	-- Subtract 476 days from the current date
+	DATEADD(DAY,-476,GETDATE()) AS date_476days_ago;
+	
+	
+Calculate the number of years since a participant celebrated their 18th birthday until the first time they voted.
+
+SELECT
+	first_name,
+	birthdate,
+	first_vote_date,
+    -- Select the diff between the 18th birthday and first vote
+	DATEDIFF(YEAR, DATEADD(YEAR, 18, birthdate), first_vote_date) AS adult_years_until_vote
+FROM voters;
+
+
+How many weeks have passed since the beginning of 2019 until now?
+
+
+SELECT 
+	-- Get the difference in weeks from 2019-01-01 until now
+	DATEDIFF(WEEK, '2019-01-01', GETDATE()) AS weeks_passed;
+
+---------------------------------------------------------------------------------------------------------------------
+
+Validating if an expression is a date
+
+The date functions don't necessarily need a date parameter in order to provide an accurate result. 
+We can also provide a string or number and SQL Server will try to convert it to a date.
+
+To verify if a given value is a date type, we can use the follwing function.
+
+ISDATE(expression)
+
+Determines whether an expression is a valid date data type or not.
+
+ISDATE(expression) Return type
+date,time,datetime	1
+datetime2		0
+other type		0
+
+The function will return 0, even if expression is datetime2. This is a limitation.
+ 
+
+DECLARE @date1 NVARCHAR(20) = '2021-12-20'
+DECLARE @date2 NVARCHAR(20) = '2021-12-XX'
+DECLARE @date3 CHAR(20) = '2021-12-20 07:28:15.999999'
+DECLARE @date4 CHAR(20) = '2021-12-20 12:45:59'
+SELECT
+ISDATE (@date1) AS date_check1,
+ISDATE (@date2) AS date_check2,
+ISDATE (@date3) AS date_check3,
+ISDATE (@date4) AS date_check4
+
+
+
+There are functions that can impact the output of ISDATE
+
+SET DATEFORMAT {format}
+
+Valid formats
+mdy, dmy, ymd, ydm, myd, dym
+
+
+Sets the order of the date parts for interpreting strings as dates. 
+
+
+DECLARE @date1 NVARCHAR(20) = '13-30-2021'
+DECLARE @date2 NVARCHAR(20) = '30-12-2021'
+SET DATEFORMAT dmy
+SELECT
+ISDATE (@date1) AS Datevalidation1,
+ISDATE (@date2) AS Datevalidation2
+
+in this example, the first date will return 0 as the format set is date-month-year (dmy)
+
+
+
+SET LANGUAGE
+
+SET LANGUAGE{language}
+
+Valid languages: English - default, Italian, Spanish etc.,
+
+English has date format as mdy
+French has date format as dmy
+
+sets the language for the session. we can use it to change how some messages are displayed and 
+it also impacts how dates are interpreted. 
+
+Different languages have different date formats so if you change the language, 
+the date format is implicitly changed as well. 
+
+
+DECLARE @date1 NVARCHAR(20) = '12-30-2021'
+DECLARE @date2 NVARCHAR(20) = '30-12-2021'
+SET LANGUAGE English
+SELECT
+ISDATE (@date1) AS Datevalidation1,
+ISDATE (@date2) AS Datevalidation2
+
+First date is valid here
+
+
+
+DECLARE @date1 NVARCHAR(20) = '12-30-2021'
+DECLARE @date2 NVARCHAR(20) = '30-12-2021'
+SET LANGUAGE French
+SELECT
+ISDATE (@date1) AS Datevalidation1,
+ISDATE (@date2) AS Datevalidation2
+
+Second date is valid here
+
+
+Excercise
+Correctly applying different date functions
+It's time to combine your knowledge on date functions!
+
+In this exercise, you are going to extract information about each voter and the first time they voted. In the voters table, the date of the first vote is stored in the first_vote_date column.
+
+You will use several date functions, like: DATENAME(), DATEDIFF(), YEAR(), GETDATE().
+
+Extract the weekday from the first_vote_date.
+
+SELECT
+	first_name,
+    last_name,
+    birthdate,
+	first_vote_date,
+	-- Find out on which day of the week each participant voted 
+	DATENAME(WEEKDAY, first_vote_date) AS first_vote_weekday
+FROM voters;
+
+Find out the year when each person voted for the first time.
+
+SELECT
+	first_name,
+    last_name,
+    birthdate,
+	first_vote_date,
+	-- Find out on which day of the week each participant voted 
+	DATENAME(weekday, first_vote_date) AS first_vote_weekday,
+	-- Find out the year of the first vote
+	YEAR(first_vote_date) AS first_vote_year	
+FROM voters;
+
+Calculate the age of each participant when they first joined the voting contest.
+
+SELECT
+	first_name,
+    last_name,
+    birthdate,
+	first_vote_date,
+	-- Find out on which day of the week each participant voted 
+	DATENAME(weekday, first_vote_date) AS first_vote_weekday,
+	-- Find out the year of the first vote
+	YEAR(first_vote_date) AS first_vote_year,
+	-- Find out the age of each participant when they joined the contest
+	DATEDIFF(YEAR, birthdate, first_vote_date) AS age_at_first_vote	
+FROM voters;
+
+Calculate the current age of each participant. Remember that you can use functions as parameters for other functions.
+
+SELECT
+	first_name,
+    last_name,
+    birthdate,
+	first_vote_date,
+	-- Find out on which day of the week each participant voted 
+	DATENAME(weekday, first_vote_date) AS first_vote_weekday,
+	-- Find out the year of the first vote
+	YEAR(first_vote_date) AS first_vote_year,
+	-- Discover the participants' age when they joined the contest
+	DATEDIFF(YEAR, birthdate, first_vote_date) AS age_at_first_vote,	
+	-- Calculate the current age of each voter
+	DATEDIFF(YEAR, birthdate, GETDATE()) AS current_age
+FROM voters;

@@ -1,0 +1,337 @@
+Window Functions
+
+Window Functions provides the ability to create and analyze groups of data. 
+With windowing function, we can look at the current row, previous row and next row all at the same time very efficiently.
+Using windowing functions, data within a table is processed as a group, allowing each group to be evaluated seperately. 
+
+
+Consider the example
+
+SELECT SalesPerson, SalesYear, CurrentQuota, ModifiedDate
+FROM SaleGoal
+WHERE SalesYear = 2011
+
+This query shows how you can return all of the data for 2011.
+Using windowing funtions you can create a query to return values by year without knowing what the values for the year are. 
+
+
+Window syntax in T-SQL
+
+OVER (PARTITION BY SalesYear ORDER BY SalesYear)
+
+Create the window with OVER clause. 
+PARTITION BY (optional) creates the frame. It is inside the parantheses and creates window boundary based on the specified columns. 
+		If you do not include PARTITION BY the frame is the entire table. 
+To arrange the results, we can use ORDER BY. 
+After window is created, we can add new functions. 
+Allows aggregations to be created at the same time as the window. 
+
+Ex:
+
+SELECT SalesPerson, SalesYear, CurrentQuota, 
+	SUM(CurrentQuota) 
+	OVER (PARTITION BY SalesYear) AS YearlyTotal,	
+	ModifiedDate AS ModDate
+FROM SaleGoal
+
+
+Here, we partition the table by SalesYear and use the windowing function SUM to add up every of the CurrentQuota column in the window to provide a total for the entire window in the YearTotal column. 
+When the year changes, the value in the YearTotal column changes showing the total for next year because the window is partitioned by Sales Year. 
+Apart from SUM, we can use other aggregations like COUNT 
+
+
+Excercise
+
+Window functions with aggregations (I)
+
+Write a T-SQL query that returns the sum of OrderPrice by creating partitions for each TerritoryName.
+
+SELECT OrderID, TerritoryName, 
+       -- Total price for each partition
+       SUM(OrderPrice)
+       -- Create the window and partitions
+       OVER(PARTITION BY TerritoryName) AS TotalPrice
+FROM Orders
+
+
+Window functions with aggregations (II)
+
+Count the number of rows in each partition.
+Partition the table by TerritoryName.
+
+SELECT OrderID, TerritoryName, 
+       -- Number of rows per partition
+       COUNT(TerritoryName)
+       -- Create the window and partitions
+       OVER(PARTITION BY TerritoryName) AS TotalOrders
+FROM Orders
+
+
+
+Common Window Functions
+
+There are also specific functions which were created expressly for using with window functions.
+The following are four of the more commonly used windowing functions
+FIRST VALUE, LAST VALUE, LEAD AND LAG.
+
+FIRST_VALUE() returns the first value in the window
+LAST_VALUE() returns the last value in window
+
+Note that for FIRST_VALUE and LAST_VALUE the ORDER BY command is required. 
+
+Thus each one of them returns one value for the entire window. 
+Because you are trying to find a specific record in a window, because the position of the records in the window must be specified using the ORDER BY Keyword.
+
+--Select the columns
+SELECT SalesPerson, SalesYear, CurrentQuota,
+
+-- First Value from every window
+	FIRST_VALUE(CurrentQuota)
+	OVER (PARTITION BY SalesYear ORDER BY ModifiedDate) AS StartQuota,
+	
+-- Last value from every window
+	LAST_VALUE(CurrentQuota)
+	OVER (PARTITION BY SalesYear ORDER BY ModifiedDate) AS EndQuota,
+	ModifiedDate as ModDate
+FROM SaleGoal
+
+
+LEAD
+
+LEAD provides ability to query value from the next row.
+Using LEAD(), you can compare the value of the current row to the value of the next row in the window. 
+Requires use of ORDER BY to order the rows. 
+
+SELECT SalesPerson, SalesYear, CurrentQuota,
+--Create a Window function to get the values from the next row
+	LEAD(CurrentQuota)
+	OVER(PARTITION BY CurrentQuota ORDER BY ModifiedDate) AS NextQuota,
+	ModifiedDate AS ModDate
+FROM SaleGoal
+
+
+LAG
+
+Similarly, we can use LAG() to compare the value of current row with value from previous row. 
+Requires use of ORDER BY to order the rows. 
+
+SELECT SalesPerson, SalesYear, CurrentQuota,
+--Create a Window function to get the values from the next row
+	LAG(CurrentQuota)
+	OVER(PARTITION BY CurrentQuota ORDER BY ModifiedDate) AS PreviousQuota,
+	ModifiedDate AS ModDate
+FROM SaleGoal
+
+
+
+Excercise
+
+
+Suppose you want to figure out the first OrderDate in each territory or the last one. How would you do that? You can use the window functions FIRST_VALUE() and LAST_VALUE(), respectively! Here are the steps:
+
+First, create partitions for each territory
+Then, order by OrderDate
+Finally, use the FIRST_VALUE() and/or LAST_VALUE() functions as per your requirement
+
+
+Write a T-SQL query that returns the first OrderDate by creating partitions for each TerritoryName.
+
+SELECT TerritoryName, OrderDate, 
+       -- Select the first value in each partition
+       FIRST_VALUE(OrderDate)
+       -- Create the partitions and arrange the rows
+       OVER (PARTITION BY TerritoryName ORDER BY OrderDate) AS FirstOrder
+FROM Orders
+
+Previous and next values
+
+What if you want to shift the values in a column by one row up or down? You can use the exact same steps as in the previous exercise but with two new functions, LEAD(), for the next value, and LAG(), for the previous value. So you follow these steps:
+
+First, create partitions
+Then, order by a certain column
+Finally, use the LEAD() and/or LAG() functions as per your requirement
+
+Write a T-SQL query that for each territory:
+Shifts the values in OrderDate one row down. Call this column PreviousOrder.
+Shifts the values in OrderDate one row up. Call this column NextOrder. You will need to PARTITION BY the territory
+
+
+SELECT TerritoryName, OrderDate, 
+       -- Specify the previous OrderDate in the window
+        LAG(OrderDate)
+       -- Over the window, partition by territory & order by order date
+       OVER (PARTITION BY TerritoryName ORDER BY OrderDate) AS PreviousOrder,
+       -- Specify the next OrderDate in the window
+       LEAD(OrderDate)
+       -- Create the partitions and arrange the rows
+       OVER (PARTITION BY TerritoryName ORDER BY OrderDate) AS NextOrder
+FROM Orders
+
+
+Complex window functions
+
+Running total
+
+To create a running total, ORDER BY the column that is different for each row in the window. ex: earlier we calculated sales for each year. we can use ORDER BY Date to create running total for each SalesPerson for each year. 
+
+
+Ex:
+
+SELECT SalesPerson, SalesYear, CurrentQuota,
+	SUM(CurrentQuota)
+	OVER (PARTITION BY SalesYear ORDER BY ModifiedDate) AS RunningTotal,
+	ModifiedDate AS ModDate
+FROM SaleGoal
+
+
+Adding row numbers
+
+ROW_NUMBER() sequentially numbers the rows in the window
+In certain situations, we need to assign row numbers to each row in a window. 
+We can do this by using ROW_NUMBER(). It requires ORDER BY. 
+
+SELECT SalesPerson, SalesYear, CurrentQuota,
+	ROW_NUMBER()
+	OVER (PARTITION BY SalesPerson ORDER BY SalesYear) AS QuatabySalesPerson
+FROM SaleGoal
+
+
+Excercise
+
+Running total
+
+Create the window, partition by TerritoryName and order by OrderDate to calculate a running total of OrderPrice
+
+SELECT TerritoryName, OrderDate, 
+       -- Create a running total
+       SUM(OrderPrice) 
+       -- Create the partitions and arrange the rows
+       OVER(PARTITION BY TerritoryName ORDER BY OrderDate) AS TerritoryTotal	  
+FROM Orders
+
+
+------------------
+
+
+Write a T-SQL query that assigns row numbers to all records partitioned by TerritoryName and ordered by OrderDate.
+
+SELECT TerritoryName, OrderDate, 
+       -- Assign a row number
+       ROW_NUMBER() 
+       -- Create the partitions and arrange the rows
+       OVER(PARTITION BY TerritoryName ORDER BY OrderDate) AS OrderCount
+FROM Orders
+
+
+
+Calculating Standard Deviation
+
+Calculating standard deviation is a common task in data science as it is important to understand the statistical distributions of the numeric columns. 
+We can calculate standard deviation either for the entire table or for each window. 
+STDEV() calculates the standard deviation. 
+
+EX:
+
+SELECT SalesPerson, SalesYear, CurrentQuota
+	STDEV(CurrentQuota)
+		OVER () AS StandardDev,
+		ModifiedDate AS ModDate
+FROM SaleGoal
+
+
+Here we calculate the standard deviation of the CurrentQuota column for the entire table. Since no column are listed in OVER, we did not include PARTITION BY, only one window is created for the entire table. 
+As, a result one value is repeated across the entire StandardDev column. 
+
+SELECT SalesPerson, SalesYear, CurrentQuota
+	STDEV(CurrentQuota)
+		OVER (PARTITION BY SalesYear ORDER BY SalesYear) AS StDev,
+		ModifiedDate AS ModDate
+FROM SaleGoal
+
+In this example, the OVER clause is partitioning and ordering by SalesYear thus creating one window for each unique value in SalesYear
+As a result the StandardDev is calculated for each window
+
+
+Calculating the Mode
+
+Mode is the value which appears the most often in your data. 
+Unlike Standard deviation there is no function to calculate mode. 
+To calculate Mode	
+	Create a CTE containing an ordered count of values using ROW_NUMBER
+	Write a query using the CTE to pick the value with highest row number. 
+	
+Ex:
+
+WITH QuotaCount AS (
+	SELECT SalesPerson, SalesYear, CurrentQuota,
+	ROW_NUMBER()
+	OVER (PARTITION BY CurrentQuota ORDER BY CurrentQuota) AS QuotaList
+FROM SaleGoal
+)
+SELECT * FROM QuotaCount
+	
+	
+We do this by creating windows by partitioning and ordering by CurrentQuota and assigning a row number for each row in each windows
+We can use the CTE to write a query to return the value with the highest row number, as shown below. 
+The query uses the WHERE Clause to filter the data to only show values equal to the maximum value in QuotaList
+	
+WITH QuotaCount AS (
+	SELECT SalesPerson, SalesYear, CurrentQuota,
+	ROW_NUMBER()
+	OVER (PARTITION BY CurrentQuota ORDER BY CurrentQuota) AS QuotaList
+FROM SaleGoal
+)
+SELECT CurrentQuota, QuotaList AS Mode
+FROM QuotaCount
+WHERE QuotaList IN (SELECT MAX(QuotaList) FROM QuotaCount)
+
+
+
+Excercise
+
+Create the window, partition by TerritoryName and order by OrderDate to calculate a running standard deviation of OrderPrice.
+
+SELECT OrderDate, TerritoryName, 
+       -- Calculate the standard deviation
+	   STDEV(OrderPrice) 
+       OVER(PARTITION BY TerritoryName ORDER BY OrderDate) AS StdDevPrice	  
+FROM Orders
+
+
+
+Create a CTE ModePrice that returns two columns (OrderPrice and UnitPriceFrequency).
+Write a query that returns all rows in this CTE.
+
+-- Create a CTE Called ModePrice which contains two columns
+WITH ModePrice (OrderPrice, UnitPriceFrequency)
+AS
+(
+	SELECT OrderPrice, 
+	ROW_NUMBER() 
+	OVER(PARTITION BY OrderPrice ORDER BY OrderPrice) AS UnitPriceFrequency
+	FROM Orders 
+)
+
+-- Select everything from the CTE
+SELECT * FROM ModePrice
+
+
+
+Use the CTE ModePrice to return the value of OrderPrice with the highest row number.
+
+
+-- CTE from the previous exercise
+WITH ModePrice (OrderPrice, UnitPriceFrequency)
+AS
+(
+	SELECT OrderPrice,
+	ROW_NUMBER() 
+    OVER (PARTITION BY OrderPrice ORDER BY OrderPrice) AS UnitPriceFrequency
+	FROM Orders
+)
+
+-- Select the order price from the CTE
+SELECT OrderPrice AS ModeOrderPrice
+FROM ModePrice
+-- Select the maximum UnitPriceFrequency from the CTE
+WHERE UnitPriceFrequency IN ( SELECT MAX(UnitPriceFrequency) FROM ModePrice)

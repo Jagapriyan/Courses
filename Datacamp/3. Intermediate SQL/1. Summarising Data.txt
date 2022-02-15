@@ -1,0 +1,233 @@
+Data Analysis with Aggregation
+
+Reviewing summarized values for each column is a common first step in analyzing data.
+If the data exists in a database, fastest way to aggregate is to use SQL. 
+
+Common Summary statistics
+
+MIN() - for the minimum value of a column
+MAX() - for the maximum value of a column
+AVG() - for the mean or average value of a column
+
+We use GROUP BY clause for subtotaling the aggregation. 
+We cannot use WHERE with GROUP BY as it will give an error. Instead we need to use HAVING
+
+
+
+Creating aggregations
+This chapter uses data gathered by the National UFO Reporting Center. 
+The data is contained in the Incidents table and in this lesson, you will be aggregating values in the DurationSeconds column.
+
+
+Task
+
+Write a T-SQL query which will return the average, minimum, and maximum values of the DurationSeconds column.
+
+-- Calculate the average, minimum and maximum
+SELECT AVG(DurationSeconds) AS Average, 
+       MIN(DurationSeconds) AS Minimum, 
+       MAX(DurationSeconds) AS Maximum
+FROM Incidents
+
+Creating grouped aggregations
+
+You can calculate statistics for each group using GROUP BY. For example, 
+you can calculate the maximum value for each state using the following query:
+
+SELECT State, MAX(DurationSeconds)
+FROM Incidents
+GROUP BY State
+
+To filter even further, for example, 
+to find the values for states where the maximum value is greater than 10, you can use the HAVING clause.
+
+Task
+
+Write a T-SQL query to calculate the average, minimum, and maximum values of the DurationSeconds column grouped by Shape. 
+You need to select an additional column. What is it?
+
+-- Calculate the aggregations by Shape
+SELECT shape,
+        AVG(DurationSeconds) AS Average, 
+       MIN(DurationSeconds) AS Minimum, 
+       MAX(DurationSeconds) AS Maximum
+    FROM incidents
+    GROUP BY shape
+	
+	Update the query to return only the records where the minimum of DurationSeconds column is greater than 1.
+	
+	-- Calculate the aggregations by Shape
+SELECT Shape,
+       AVG(DurationSeconds) AS Average, 
+       MIN(DurationSeconds) AS Minimum, 
+       MAX(DurationSeconds) AS Maximum
+FROM Incidents
+GROUP BY Shape
+-- Return records where minimum of DurationSeconds is greater than 1
+HAVING MIN(DurationSeconds) > 1
+
+
+
+
+Detecting Mising Values
+
+When you have no data, the empty databse field contains the word NULL.
+Because NULL is not a number, it is not possible to use =,<, or > to find or compare missing values. 
+To determine if a colum contains a NULL value, use 'IS NULL' and 'IS NOT NULL'. 
+
+
+Blank is not NULL.
+
+A blank is not the same as NULL value.
+May show up in columns containing text.
+An empty string '' can be used to find blank values. 
+The best way is to look for a column where the Length or LEN > 0. 
+
+
+
+ For example, to return all rows with non-missing SHAPE values, you can use:
+ 
+ SELECT *  
+FROM Incidents
+WHERE Shape IS NOT NULL
+
+
+Task
+
+Write a T-SQL query which returns only the IncidentDateTime and IncidentState columns where IncidentState is not missing.
+
+-- Return the specified columns
+SELECT IncidentDateTime, IncidentState
+FROM Incidents
+-- Exclude all the missing values from IncidentState  
+WHERE IncidentState IS NOT NULL
+
+
+Imputing missing values (I)
+
+In the previous exercise, you looked at the non-missing values in the IncidentState column. 
+But what if you want to replace the missing values with another value instead of omitting them? You can do this using the ISNULL() function. 
+Here we replace all the missing values in the Shape column using the word 'Saucer':
+
+Return the specified value IF the expression is NULL
+
+ISNULL(expression, value)
+
+SELECT  Shape, ISNULL(Shape, 'Saucer') AS Shape2
+FROM Incidents
+
+You can also use ISNULL() to replace values from a different column instead of a specified word.
+
+Task
+Write a T-SQL query which only returns rows where IncidentState is missing.
+
+Replace all the missing values in the IncidentState column with the values in the City column and name this new column Location.
+
+
+-- Check the IncidentState column for missing values and replace them with the City column
+
+SELECT IncidentState, ISNULL(IncidentState,City)  AS Location
+FROM Incidents
+-- Filter to only return missing values from IncidentState
+WHERE IncidentState IS NULL
+
+Substituting NULL Values using COALESCE
+
+COALESCE returns the first non-missing value. You can pass multiple values to COALESCE and it will always return the first non-NULL value. 
+It is similar to using a series of if-else statements to return the first non-missing value. 
+COALESCE (value_1, value_2, value_3, . . . value_n)
+
+
+
+
+
+
+
+Imputing missing values (II)
+What if you want to replace missing values in one column with another and 
+want to check the replacement column to make sure it doesn't have any missing values? 
+To do that you need to use the COALESCE statement.
+
+SELECT Shape, City, COALESCE(Shape, City, 'Unknown') as NewShape
+FROM Incidents
++----------------+-----------+-------------+
+| Shape          |  City     |  NewShape   |
++----------------+-----------+-------------+
+| NULL           | Orb       | Orb         |
+| Triangle       | Toledo    | Triangle    |
+| NULL           | NULL      | Unknown     | 
++----------------+-----------+-------------+
+
+Task
+
+Replace missing values in Country with the first non-missing value from IncidentState or City, in that order. 
+Name the new column Location.
+
+-- Replace missing values 
+SELECT Country, COALESCE(Country,IncidentState, City) AS Location
+FROM Incidents
+WHERE Country IS NULL
+
+
+
+Binning Data with CASE
+
+We can use CASE statement to check if a column contains a value and WHEN it does THEN we can replace the value with some other value of our choice,
+ELSE replace it with any other default value. 
+A CASE statement must have atleas 4 keywords. CASE, WHEN, THEN, and END. ELSE is optional. But often it makes sense to include it. 
+
+Syntax
+
+CASE	
+	WHEN Boolean_expression THEN result_expression [...n]
+	[ELSE else_result_expression]
+END [AS NewColmnName]
+
+A CASE statement is a good way to arrange data into smaller groups. This is common technique for Data Science. 
+The groups are often called bins. This helps to evaluate larger groups of data rather than discrete values. 
+
+Using CASE statements
+In this exercise, you will use a CASE statement to create a new column which specifies whether the Country is USA or International.
+
+
+Create a new column, SourceCountry, defined from these cases:
+When Country is 'us' then it takes the value 'USA'.
+Otherwise it takes the value 'International'.
+
+SELECT Country, 
+       CASE 
+		WHEN Country = 'us'  THEN 'USA'
+		ELSE 'International'
+       END AS SourceCountry
+FROM Incidents
+
+
+Creating several groups with CASE
+In this exercise, you will write a CASE statement to group the values in the DurationSeconds into 5 groups based on the following ranges:
+
+DurationSeconds	SecondGroup
+<= 120					1
+> 120 and <= 600		2
+> 600 and <= 1200		3
+> 1201 and <= 5000		4
+For all other values 	5
+
+
+
+
+Create a new column, SecondGroup, that uses the values in the DurationSeconds column based on the ranges mentioned above.
+
+-- Complete the syntax for cutting the duration into different cases
+SELECT DurationSeconds, 
+-- Start with the 2 TSQL keywords, and after the condition a TSQL word and a value
+      CASE WHEN (DurationSeconds <= 120) THEN 1
+-- The pattern repeats with the same keyword and after the condition the same word and next value          
+       WHEN (DurationSeconds > 120 AND DurationSeconds <= 600) THEN 2
+-- Use the same syntax here             
+       WHEN (DurationSeconds > 601 AND DurationSeconds <= 1200) THEN 3
+-- Use the same syntax here               
+       WHEN (DurationSeconds > 1201 AND DurationSeconds <= 5000) THEN 4
+-- Specify a value      
+       ELSE 5 
+       END AS SecondGroup   
+FROM Incidents

@@ -1,0 +1,448 @@
+Foreign Keys
+
+Foreign Keys(FK) are designated columns that point to a primary key(PK) of another table. 
+The domain and the data type must be the same as one of the primary key. 
+Only foreign key values are allowed that exist as values in the primary key of the referenced table. 
+Each value of FK must exist in PK of the other table (FK constraint or "referential integrity"). This is the actual foreign key constraint, also called "referential integrity"
+Foreign key is not necessarily an actual key, because duplicates and "NULL" values are allowed. 
+When we create a new table, we can specify a foreign key similarly to a primary key. 
+
+A foreign key can be created using REFERENCES keyword
+
+Syntax
+
+CREATE TABLE table_name (
+ column_name data_type PRIMARY KEY,
+ column_name data_type REFERENCES reference_table_name(PK_column_name)
+);
+
+
+Adding foreign key for an existing column
+
+ALTER TABLE table_name
+ADD CONSTRAINT constraint_name FOREIGN KEY (column_name) REFERENCES reference_table_name (column_name);
+
+
+
+Consider the following examples
+
+CREATE TABLE manufacturers (
+	name VARCHAR(255) PRIMARY KEY
+);
+
+INSERT INTO manufacturers
+VALUES ('Ford'),('VW'),('GM');
+
+
+CREATE TABLE cars(
+	model VARCHAR(255) PRIMARY KEY,
+	manufacturer_name VARCHAR(255) REFERENCES manufacturers (name)
+);
+
+
+INSERT INTO cars 
+VALUES ('Ranger','Ford'),('Beetle','VW'),('Cadillac','GM')
+
+Note: here the foreign key, manufacturer_name refers to manaufacturers table. So we can't enter any other Manufacturer name in this column which are not part of manaufacturers table. 
+it makes sense, if there is no manufacturers name, then we should not have their cars. 
+
+
+Excersice
+REFERENCE a table with a FOREIGN KEY
+
+In your database, you want the professors table to reference the universities table. 
+You can do that by specifying a column in professors table that references a column in the universities table.
+
+Use Syntax
+
+ALTER TABLE a 
+ADD CONSTRAINT a_fkey FOREIGN KEY (b_id) REFERENCES b (id);
+
+Table a should now refer to table b, via b_id, which points to id. a_fkey is, as usual, a constraint name you can choose on your own.
+Pay attention to the naming convention employed here: Usually, a foreign key referencing another primary key with name id is named x_id, where x is the name of the referencing table in the singular form.
+
+Steps
+
+Rename the university_shortname column to university_id in professors.
+
+-- Rename the university_shortname column
+ALTER TABLE professors
+RENAME COLUMN university_shortname TO university_id
+
+
+Add a foreign key on university_id column in professors that references the id column in universities.
+Name this foreign key professors_fkey.
+
+-- Add a foreign key on professors referencing universities
+ALTER TABLE professors
+ADD CONSTRAINT professors_fkey FOREIGN KEY (university_id) REFERENCES universities(id);
+
+
+
+Excersice
+
+JOIN tables linked by a foreign key
+
+Let's join these two tables to analyze the data further!
+While foreign keys and primary keys are not strictly necessary for join queries, 
+they greatly help by telling you what to expect. For instance, you can be sure that records 
+referenced from table A will always be present in table B – so a join from table A will always
+ find something in table B. If not, the foreign key constraint would be violated.
+ 
+ Steps
+ JOIN professors with universities on professors.university_id = universities.id, i.e., retain all records where the foreign key of professors is equal to the primary key of universities.
+Filter for university_city = 'Zurich'.
+
+-- Select all professors working for universities in the city of Zurich
+
+SELECT professors.lastname, universities.id,universities.university_city
+FROM universities
+INNER JOIN professors
+ON professors.university_id = universities.id
+WHERE university_city = 'Zurich';
+
+
+Adding complex relationships
+
+We have already added 1:N relationship between professors and universities.
+Such relationship had to be implemented with one foreign key in the table that has at most one foreign entitiy associated.
+In this case, that's the "professors" table, as professors cannot have more than one university associated. 
+
+The professors can have more than one affiliations to organizations, for instance as a chariman of bank and as a president of golf club. 
+On the other hand, organizations can also have more tha one professor connected to them.
+
+Now a new relationship will be established with Professors and organization.
+This will be an N:M relationship. Not a 1:N relationship as with professor and universities.
+This depicts the fact that professor can be affiliated with more than organization and vice versa. 
+Also it has an own attribute, the "function"
+
+Now we will have four tables. Three for entities "professors", "universities" and "organizations".
+One table for N:M relationship between "professors" and "organizations". 
+
+How to implement N:M relationship
+
+Such relationship can be implemented by creating a table with two foreign keys that point to both connected entities.
+In this case, one foreign key pointing to professors "id" column and organizations "id" column
+Also additional attribute, in this case "function" need to be included. 
+
+If we were to create that relationship table from scratch, 
+
+CREATE TABLE affiliations (
+ 	professor_id INTEGER REFERENCES professors(id),
+	organization_id VARCHAR(256) REFERENCES organizations(id),
+	function VARCHAR(256)
+);
+
+Note that professor_id is INTEGER as it is in professors table, 
+organization_id is VARCHAR as it is in organizations table and finally, 
+this table do not have primary key because a professor can theoretically have multiple functions in one organization.
+
+We can define a combination of all three keys as primary key in order to have some form of unique constraint in that table. 
+
+Excersice
+
+Add foreign keys to the "affiliations" table
+
+
+At the moment, the affiliations table has the structure {firstname, lastname, function, organization}, 
+you're going to turn this table into the form {professor_id, organization_id, function}, 
+with professor_id and organization_id being foreign keys that point to the respective tables.
+
+
+Steps
+
+Add a professor_id column with integer data type to affiliations, 
+and declare it to be a foreign key that references the id column in professors.
+
+
+-- Add a professor_id column
+ALTER TABLE affiliations
+ADD COLUMN professor_id INTEGER REFERENCES professors(id);
+
+
+Rename the organization column in affiliations to organization_id.
+
+-- Rename the organization column to organization_id
+ALTER TABLE affiliations
+RENAME COLUMN organization TO organization_id;
+
+
+Add a foreign key constraint on organization_id so that it references the id column in organizations.
+
+Syntax
+
+ALTER TABLE
+ADD CONSTRAINT constraint_name 
+FOREIGN KEY (column_name) REFERENCES other_table_name (other_column_name)
+
+
+-- Add a foreign key on organization_id
+ALTER TABLE affiliations
+ADD CONSTRAINT affiliations_organization_fkey FOREIGN KEY (organization_id) REFERENCES organizations (id);
+
+Next Excersice
+
+Populate the "professor_id" column
+
+Now it's time to also populate professors_id. You'll take the ID directly from professors.
+
+Here's a way to update columns of a table based on values in another table:
+
+UPDATE table_a
+SET column_to_update = table_b.column_to_update_from
+FROM table_b
+WHERE condition1 AND condition2 AND ...;
+
+This query does the following:
+
+For each row in table_a, find the corresponding row in table_b where condition1, condition2, etc., are met.
+Set the value of column_to_update to the value of column_to_update_from (from that corresponding row).
+The conditions usually compare other columns of both tables, e.g. table_a.some_column = table_b.some_column.
+Of course, this query only makes sense if there is only one matching row in table_b.
+
+Steps
+
+First, have a look at the current state of affiliations by fetching 10 rows and all columns.
+
+-- Have a look at the 10 first rows of affiliations
+SELECT * FROM affiliations
+LIMIT 10;
+
+
+Update the professor_id column with the corresponding value of the id column in professors.
+"Corresponding" means rows in professors where the firstname and lastname are identical to the ones in affiliations.
+
+-- Set professor_id to professors.id where firstname, lastname correspond to rows in professors
+UPDATE affiliations
+SET professor_id = professors.id
+FROM professors
+WHERE affiliations.firstname = professors.firstname AND affiliations.lastname = professors.lastname;
+
+Check out the first 10 rows and all columns of affiliations again. Have the professor_ids been correctly matched?
+
+-- Have a look at the 10 first rows of affiliations again
+SELECT * FROM affiliations
+LIMIT 10;
+
+
+
+Excersice3
+
+Drop "firstname" and "lastname"
+The firstname and lastname columns of affiliations were used to establish a link to the professors table in the last exercise –
+so the appropriate professor IDs could be copied over. 
+This only worked because there is exactly one corresponding professor for each row in affiliations. 
+In other words: {firstname, lastname} is a candidate key of professors – a unique combination of columns.
+
+It isn't one in affiliations though, because, professors can have more than one affiliation.
+
+Because professors are referenced by professor_id now, the firstname and lastname columns are no longer needed, 
+so it's time to drop them. After all, one of the goals of a database is to reduce redundancy where possible.
+
+
+Steps
+Drop the firstname and lastname columns from the affiliations table.
+
+-- Drop the firstname column
+ALTER TABLE affiliations
+DROP COLUMN firstname;
+
+-- Drop the lastname column
+ALTER TABLE affiliations
+DROP COLUMN lastname;
+
+
+Referential Integrity
+
+A record referencing another table must refer to an existing record in that table. In other words a record in tableA cannot point to a record in tableB that does not exist.
+Referential integrity is a constraint that always concerns two tables and is enforced through FOREIGN KEY. 
+
+Violation of Referential Integrity
+
+Referential integrity can be violated in two ways. 
+
+If a record in table B that is referenced from a record in table A is deleted
+if a record in table A referencing a non-existing record from table B is inserted. 
+
+Foreign keys prevent violations. 
+
+ON DELETE
+	NO ACTION: Throw an error
+	CASCADE: Delete all referencing records
+	RESTRICT: Throw an error
+	SET NULL: Set the referencing column to NULL
+	SET DEFAULT: Set the referencing column to its default value. This works only when we set a default value to column. 
+	
+	
+
+Referential integrity violations
+
+Excersice
+
+Change the referential integrity behavior of a key
+
+So far, you implemented three foreign key constraints:
+
+professors.university_id to universities.id
+affiliations.organization_id to organizations.id
+affiliations.professor_id to professors.id
+
+These foreign keys currently have the behavior ON DELETE NO ACTION. 
+Here, you're going to change that behavior for the column referencing organizations from affiliations. 
+If an organization is deleted, all its affiliations (by any professor) should also be deleted.
+
+
+Altering a key constraint doesn't work with ALTER COLUMN.
+Instead, you have to DROP the key constraint and then ADD a new one with a different ON DELETE behavior.
+
+For deleting constraints, though, you need to know their name. This information is also stored in information_schema.
+
+Steps
+
+
+Have a look at the existing foreign key constraints by querying table_constraints in information_schema.
+
+-- Identify the correct constraint name
+SELECT constraint_name, table_name, constraint_type
+FROM information_schema.table_constraints
+WHERE constraint_type = 'FOREIGN KEY';
+
+
+Delete the affiliations_organization_id_fkey foreign key constraint in affiliations.
+
+-- Drop the right foreign key constraint
+ALTER TABLE affiliations
+DROP CONSTRAINT affiliations_organization_id_fkey ;
+
+Add a new foreign key to affiliations that CASCADEs deletion if a referenced record is deleted from organizations. 
+Name it affiliations_organization_id_fkey.
+
+ -- Add a new foreign key constraint from affiliations to organizations which cascades deletion
+ALTER TABLE affiliations
+ADD CONSTRAINT affiliations_organization_id_fkey FOREIGN KEY (organization_id) REFERENCES organizations (id) ON DELETE CASCADE;
+
+Run the DELETE and SELECT queries to double check that the deletion cascade actually works.
+
+-- Delete an organization 
+DELETE FROM organizations 
+WHERE id = 'CUREM';
+
+-- Check that no more affiliations with this organization exist
+SELECT * FROM affiliations
+WHERE organization_id = 'CUREM';
+
+
+Summary
+
+Started with simple table with lot of redundancy. 
+That table was transformed to database
+defined column data types, added primary keys, foreign keys
+specified relationships between tables. 
+Here we have transformed a database. 
+It is done with postgreSQL. which is also called DBMS. 
+The DBMS and one or more databses together form the "Database System". 
+The DBMS exposes a query interface where you can run ad-hoc analyses and queries with SQL. 
+We can access this interface through other client applications. For example we can program a Python script that connects to the databse, loads data from it and visualize it. 
+
+
+Some SQL queries on the table 
+
+
+Count affiliations per university
+In this exercise, you will find out which university has the most affiliations (through its professors). 
+For that, you need both affiliations and professors tables, as the latter also holds the university_id.
+
+
+Count the number of total affiliations by university.
+Sort the result by that count, in descending order.
+
+-- Count the total number of affiliations per university
+SELECT COUNT(*), professors.university_id 
+FROM affiliations
+JOIN professors
+ON affiliations.professor_id = professors.id
+-- Group by the university ids of professors
+GROUP BY professors.university_id
+ORDER BY count DESC;
+
+
+Join all the tables together
+In this last exercise, your task is to find the university city of the professor with the most affiliations in the sector "Media & communication".
+For this,
+
+you need to join all the tables,
+group by some column,
+and then use selection criteria to get only the rows in the correct sector.
+
+Steps
+Join all tables in the database (starting with affiliations, professors, organizations, and universities) and look at the result.
+
+affiliations table columns
+function
+organization_id
+professor_id
+
+professors table columns
+
+id
+firstname
+lastname
+university_id
+
+organizations table 
+
+id
+organization_sector
+
+universities table
+
+id
+university
+university_city
+
+
+
+
+-- Join all tables
+SELECT * 
+FROM affiliations
+JOIN professors
+ON affiliations.professor_id = professors.id
+JOIN organizations
+ON affiliations.organization_id = organizations.id
+JOIN universities
+ON professors.university_id = universities.id;
+
+Now group the result by organization sector, professor, and university city.
+Count the resulting number of rows.
+
+
+-- Group the table by organization sector, professor ID and university city
+SELECT COUNT(*), organizations.organization_sector, 
+professors.id, universities.university_city
+FROM affiliations
+JOIN professors
+ON affiliations.professor_id = professors.id
+JOIN organizations
+ON affiliations.organization_id = organizations.id
+JOIN universities
+ON professors.university_id = universities.id
+GROUP BY organizations.organization_sector, 
+professors.id, universities.university_city;
+
+Only retain rows with "Media & communication" as organization sector, and sort the table by count, in descending order.
+
+-- Filter the table and sort it
+SELECT COUNT(*), organizations.organization_sector, 
+professors.id, universities.university_city
+FROM affiliations
+JOIN professors
+ON affiliations.professor_id = professors.id
+JOIN organizations
+ON affiliations.organization_id = organizations.id
+JOIN universities
+ON professors.university_id = universities.id
+WHERE organizations.organization_sector = 'Media & communication'
+GROUP BY organizations.organization_sector, 
+professors.id, universities.university_city
+ORDER BY COUNT DESC;

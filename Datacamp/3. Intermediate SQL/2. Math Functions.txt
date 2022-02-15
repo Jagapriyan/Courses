@@ -1,0 +1,317 @@
+Counts and Totals
+
+COUNT
+
+Using COUNT, we can obtain total number of records in a table.
+This is a quick way of determining how big the dataset really is. 
+
+COUNT(*) FROM Table_name
+
+We can pass the asterisk to COUNT to indicate that you want to count the number of records in the entire table. 
+
+
+
+DISTINCT COUNT
+If you want to know the number of unique values in a column, you can use the keyword DISTINCT.
+This is not the same as number of rows in the column unless every value in the column listed is unique. 
+
+
+COUNT(DISTINCT COULUMN_NAME)
+
+
+COUNT AGGREGATION
+
+GROUP BY can be used with COUNT() in the same way as the other aggregation functions such as AVG(), MIN(), MAX()
+Use the ORDER BY command to sort the values. 
+	ASC will return the smallest values first(default)
+	DESC will return the largest values first. 
+	
+
+COLUMN TOTALS WITH SUM
+
+SUM() provides a numeric total of the values in a column. 
+it follows the same pattern as other aggregations
+Combine it with GROUP BY to get subtotals based on columns specified. 
+
+
+
+Excercise
+
+Calculating the total
+
+In this chapter, you will use the shipments data. The Shipments table has several columns such as:
+
+MixDesc: the concrete type
+Quantity: the amount of concrete shipped
+In this exercise, your objective is to calculate the total quantity for each type of concrete used.
+
+
+Tasks
+
+Write a T-SQL query which will return the sum of the Quantity column as Total for each type of MixDesc.
+
+
+-- Write a query that returns an aggregation 
+SELECT MixDesc, SUM(Quantity) AS Total
+FROM Shipments
+-- Group by the relevant column
+GROUP BY MixDesc
+
+
+Counting the number of rows
+In this exercise, you will calculate the number of orders for each concrete type.
+ Since each row represents one order, all you need to is count the number of rows for each type of MixDesc.
+ 
+ 
+ SELECT Mixdesc, COUNT(Mixdesc) FROM Shipments
+GROUP BY Mixdesc
+
+
+Math Operations with Dates
+
+DATEPART
+
+DATEPART is used in T-SQL DATE functions to specify the unit of measurement, such as days, months, years, hours etc.,
+
+DATEPART is used to determine what part of the date you want to calculate. 
+
+Some of the common abbrevations are below. They are treated as keyword
+
+DD for Day
+MM for Month
+YY for Year
+HH for Hour
+
+Common Date functions in T-SQL
+
+DATEADD(): Add or subtract DATEPART (datetime values). The days, months, years values.  Always returns a date. 
+DATEADD() has three required arguments. 
+
+DATEADD(DATEPART, number, date)
+
+DATEPART: Unit of measurement (DD,MM etc)
+number:  it is the number, an integer to add to date or subtract for the date. 
+date: the date itself
+
+For example, if you want to add 30 days from June 21, 2020. 
+
+SELECT DATEADD(DD, 30, '2020-06-2021')
+
+If you want to subtract 30 days from June 21, 2020. 
+
+SELECT DATEADD(DD, -30, '2020-06-2021')
+
+
+
+DATEDIFF(): Obtain the difference between two datetime values. Always returns a number. 
+
+DATEDIFF() also requires 3 arguments. 
+
+DATEDIFF(DATEPART, startdate, enddate)
+
+DATEPART: unit of measurement (DD, MM etc.,)
+startdate: The starting date value
+enddate: An ending datetime value. 
+
+Note that if the start date is greater than the end date, then difference will be negative indicating the value to denote that the date is in past. 
+
+Example
+
+DATEDIFF (DD, '2020-05-22', '2020-06-21') AS Difference1
+DATEDIFF (DD, '2020-07-21', '2020-06-21') AS Difference2
+
+Here Difference1 will be positive while Difference2 will be negative. 
+
+Example2
+
+SELECT DATEDIFF (YY, '1991-06-01', '2021-11-26') AS Years,
+	   DATEDIFF (MM, '1991-06-01', '2021-11-26') AS Months,
+	   DATEDIFF (DD, '1991-06-01', '2021-11-26') AS Days
+
+
+
+Excercise
+
+Counting the number of days between dates
+
+Write a query that returns the number of days between OrderDate and ShipDate.
+
+-- Return the difference in OrderDate and ShipDate
+SELECT OrderDate, ShipDate,
+       DATEDIFF(DD, OrderDate, ShipDate) AS Duration
+FROM Shipments;
+
+
+Adding days to a date
+
+In this exercise, you will calculate the approximate delivery date of an order based on ShipDate.
+
+Write a query that returns the approximate delivery date as five days after the ShipDate.
+
+-- Return the DeliveryDate as 5 days after the ShipDate
+SELECT OrderDate, 
+       DATEADD(DD,5,ShipDate) AS DeliveryDate
+FROM Shipments
+
+
+Rounding and Truncating Numbers
+
+Rounding numbers:
+
+ROUND function lets you round the numbers on either side of the decimal. 
+
+ROUND(number, length [,function])
+
+It takes two required arguments. The number to be rounded and length (Number of places the number should be rounded).
+If the length specified is negative, the numbers on left side of the decimal, i.e the whole numbers are rounded. 
+For positive length the decimal numbers are rounded. i.e numbers or right side of the decimal. 
+
+
+Example
+
+ROUND(DurationSeconds, 0) AS RoundToZero,
+ROUND(DurationSeconds, 1) AS RoundToOne,
+ROUND(DurationSeconds, -1) AS RoundToTen,
+ROUND(DurationSeconds, -2) AS RoundToHundred
+FROM Incidents
+ 
+Here, -1 will round the wholenumber to nearest 10s and -2 will round the wholenumber to nearest zero. 
+
+Ex:
+
+DurationSeconds
+
+121.6480  will be rounded to 120.000 for -1 and will be rounded to 100.000 for -2.
+170.3976  will be rounded to 170.000 for -1 and will be rounded to 200.000 for -2. 
+
+Truncating
+
+Sometimes we just need to truncate values instead of rounding up or rounding down. 
+Example
+
+Truncate 17.85 --> 17
+Round 17.85 --> 18
+
+Truncating with ROUND()
+
+The ROUND() function can be used to truncate values when you specify the third argument
+
+ROUND(number, length [,function])
+
+Set the third value to a non-zero number. 
+
+SELECT Profit,
+ROUND(DurationSeconds, 0) AS RoundingtoWhole,
+ROUND(DurationSeconds, 0, 1) AS Truncating
+FROM Incidents
+
+Profit		RoudingtoWhole		Truncating
+15.6100		16.0000				15.0000
+13.2444		13.0000				13.0000
+17.9260		18.0000				17.0000
+
+
+
+Excercise
+
+Rounding numbers
+
+Sometimes, you only care about the whole dollar amount and want to ignore the decimal values of the cost.
+In this exercise, you will round the cost to the nearest dollar.
+
+Write a SQL query to round the values in the Cost column to the nearest whole number.
+
+-- Round Cost to the nearest dollar
+SELECT Cost, 
+       ROUND(Cost,0) AS RoundedCost
+FROM Shipments
+
+Truncating numbers
+
+Since rounding can sometimes be misleading, i.e., $16.8 becomes $17 while $16.4 remains $16, you may want to truncate the values after the decimal instead of rounding them. 
+When you truncate the numbers, both $16.8 and $16.4 remain $16. In this exercise, you will do just that, truncate the Cost column to a whole number.
+
+
+Write a SQL query to truncate the values in the Cost column to the nearest whole number.
+
+-- Truncate cost to whole number
+SELECT Cost, 
+       ROUND(Cost,0,1) AS TruncateCost
+FROM Shipments
+
+More Math Functions
+
+These math functions are different from Aggregations. These are applied to every item on column and nothing is summarized. 
+
+Absolute value
+There are scenarios where we are interested only in absolute value and not whether it is negative or positive.
+
+
+Use ABS() to return non-negative values. 
+ABS(number)
+
+
+Square and Square root.
+
+We can use SQRT and SQUARE functions for respective mathematical operations. 
+
+SELECT SQRT(9) AS Sqrt,
+SQUARE(9) AS Square
+
+Logs
+
+If you want to analyze price and the data appears skewed, you might want to take the logarithmic value to move the skew to a more normalized bell curve. 
+
+
+LOG() returns the natural logarithm
+Optionally, you can set the base, which if not set is 2.718281828
+By default it returns natural algorithm. 
+
+LOG(number [,Base])
+
+Example
+
+SELECT DurationSeconds, LOG(DurationSeconds,10) AS LogSeconds
+FROM Incidents
+
+This will calclate log base 10 value. 
+
+Log of 0 cannot be take as it will throw an error. 
+
+
+Excercise
+
+Calculating the absolute value
+The Shipments table contains some bad data. 
+There was a problem with the scales, and the weights show up as negative numbers. 
+In this exercise, you will write a query to convert all negative weights to positive weights.
+
+
+Write a query that converts all the negative values in the DeliveryWeight column to positive values.
+
+-- Return the absolute value of DeliveryWeight
+SELECT DeliveryWeight,
+       ABS(DeliveryWeight) AS AbsoluteValue
+FROM Shipments
+
+
+Write a query that calculates the square and square root of the WeightValue column.
+
+-- Return the square and square root of WeightValue
+SELECT WeightValue, 
+       SQUARE(WeightValue) AS WeightSquare, 
+       SQRT(WeightValue) AS WeightSqrt
+FROM Shipments
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,155 @@
+Variable is a placeholder for a specific value of a specific data type. 
+It helps is writing less repetitive code. You can quickly update the variable at the top of the query instead. 
+Variable names begin with '@' sign.
+
+Example
+
+SELECT * 
+FROM artist
+WHERE name = @my_artist;
+
+Here in query, rather than writing the artist name, we refer to "@my_artist"
+Then all that we need to do is modify the name each time. 
+
+How to create a variable.
+
+Use DECLARE keyword.
+
+DECLARE @
+
+Integer variable
+DECLARE @test_int INT
+
+Varchar Variable
+DECLARE @my_artist VARCHAR(100)
+
+
+How to assign a value to a variable.
+
+We use the keyword 'SET', immediately after the DECLARE statement.
+
+
+Integer variable
+
+DECLARE @test_int INT
+SET @test_int = 5
+
+
+Varchar variable
+
+DECLARE @my_artist VARCHAR(100)
+SET @my_artist = 'ron'
+
+
+Then we can refer these variables in WHERE Clause.
+
+
+Example
+
+DECLARE @number_of_attempt INT
+DECLARE @student_name VARCHAR(100)
+
+SET @number_of_attempt = 2
+DECLARE @student_name = 'Rune'
+
+SELECT first_name
+FROM student
+WHERE attempts = @number_of_attempt AND first_name = @student_name;
+
+
+
+Examples
+
+
+#DECLARE the variable @region, which has a data type of VARCHAR and length of 10.
+
+DECLARE @region VARCHAR(10);
+
+
+#SET your newly defined variable to 'RFC'
+
+SET @region = 'RFC';
+
+#Example usage of above combination
+
+SELECT description,
+       nerc_region,
+       demand_loss_mw,
+       affected_customers
+FROM grid
+WHERE nerc_region = @region;
+
+
+#Declaring multiple variables.
+
+#Declare a new variable called @start of type DATE
+#Declare a new variable called @stop of type DATE.
+# Declare a new variable called @affected of type INT.
+
+-- Declare @start
+DECLARE @start DATE
+
+-- Declare @stop
+DECLARE @stop DATE
+
+-- Declare @affected
+DECLARE @affected INT
+
+-- SET @start to '2014-01-24'
+SET @start = '2014-01-24'
+
+-- SET @stop to '2014-07-02'
+SET @stop  = '2014-07-02'
+
+-- Set @affected to 5000
+SET @affected = 5000;
+
+
+# Retrieve all rows where event_date is BETWEEN @start and @stop and affected_customers is greater than or equal to @affected.
+
+Final query should look like this
+
+-- Declare your variables
+DECLARE @start DATE
+DECLARE @stop DATE
+DECLARE @affected INT;
+-- SET the relevant values for each variable
+SET @start = '2014-01-24'
+SET @stop  = '2014-07-02'
+SET @affected =  5000 
+
+SELECT 
+  description,
+  nerc_region,
+  demand_loss_mw,
+  affected_customers
+FROM 
+  grid
+-- Specify the date range of the event_date and the value for @affected
+WHERE event_date BETWEEN @start AND @stop
+AND affected_customers >= @affected;
+
+
+Example
+
+Create a temporary table called maxtracks. Make sure the table name starts with #.
+Join album to artist using artist_id, and track to album using album_id.
+Run the final SELECT statement to retrieve all the columns from your new table.
+
+
+
+SELECT  album.title AS album_title,
+  artist.name as artist,
+  MAX(track.milliseconds / (1000 * 60) % 60 ) AS max_track_length_mins
+-- Name the temp table #maxtracks
+INTO #maxtracks
+FROM album
+-- Join album to artist using artist_id
+INNER JOIN artist ON album.artist_id = artist.artist_id
+-- Join track to album using album_id
+INNER JOIN track ON track.album_id = album.album_id
+GROUP BY artist.artist_id, album.title, artist.name,album.album_id
+-- Run the final SELECT query to retrieve the results from the temporary table
+SELECT album_title, artist, max_track_length_mins
+FROM  #maxtracks
+ORDER BY max_track_length_mins DESC, artist;

@@ -1,0 +1,107 @@
+Analytic Functions
+
+Analytic functions are computed on each row, instead of working on groups of data.
+
+FIRST_VALUE()
+
+Returns the first value in an ordered set of data.
+If you want to show in a query the minimum salary from each department per row, this is the function you can use. 
+FIRST_VALUE() is used in combination with OVER() clause. 
+
+
+FIRST_VALUE(numeric_expression)
+	OVER([PARTITION BY column] ORDER BY column) ROW_or_RANGE frame)
+
+OVER clause has following components
+
+Component 						STATUS				Description
+PARTITION by column				Optional			Used to split the output of query into seperate result sets. The function will return 
+													value for each partition.
+ORDER BY Colum					Mandatory			It is mandatory because analytical funcitons are applied on ordered result set.
+ROW_or_RANGE frame				Optional			We establish the limits for the partition on which the analytical function will be applied. 
+
+
+LAST_VALUE()
+
+Similar to FIRST_VALUE(), returning the last value in ordered set
+
+LAST_VALUE(numeric_expression)
+	OVER([PARTITION BY Column] ORDER BY Column ROW_or_RANGE frame)
+	
+For calculating last value on different groups of data, you need to make sure you know how each group or partition is created. 
+
+
+
+PARTITION Limits
+The limits of each partition can be explicityly specified after ORDER BY from the OVER Clause. You need to mention the start and end boundaries for the partition.
+Analytic functions are applied by default from the first row of the partition until the current row. 
+If you want to apply the function on the entire subset of data, you need explicitly add the clause: ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING. 
+This means that all rows will be taken into consideration from teh first one in the partition until the last. 
+
+RANGE BETWEEN start_boundary AND end_boundary
+ROWS BETWEEN start_boundary AND end_boundary
+
+Boundary					Description
+UNBOUNDED PRECEDING			first row in the partition
+UNBOUNDED FOLLOWING			last row in the partition
+CURRENT ROW					current row
+PRECEDING					previous row
+FOLLOWING					next row
+
+
+Ex:
+
+SELECT first_name + ' ' + last_name AS name,
+gender,
+total_votes AS votes,
+FIRST_VALUE(total_votes)
+OVER(PARTITION BY gender ORDER BY total_votes) AS min_votes,
+LAST_VALUE(total_votes)
+OVER (PARTITION BY gender ORDER BY total_votes ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS max_votes
+FROM voters
+
+
+
+
+name			gender	total_votes min_votes	max_votes
+Michele Suarez	F 			20		20			189
+Rebekah Srini	F 			21		20			189
+Isabella Price	F 			22		20			189
+Bailey Young	F 			27		20			189
+Tabitha Carlson	F 			29		20			189
+
+.........
+
+Hector Romero	M 			66		16			182
+Carl Tang		M 			73		16			182
+Raul Raji		M 			73		16			182
+Max Ruiz		M	 		73		16			182
+Kevin Yang		M 			74		16			182
+
+On the same row, we see the votes for each person, the min_votes, the max_votes. Notice that the min and max are different for each gender. 
+
+
+
+LAG() and LEAD()
+
+LAG(numeric_expression) OVER ([PARTITION BY Column] ORDER BY Column)
+
+you can use LAG() in SELECT statements for comparing values from the current row with values from the previous one. 
+For example, you can compare the profit made by a company in a year with the profit from the previous year. 
+
+
+LEAD(numeric_expression) OVER ([PARTITION BY column] ORDER BY Column)
+
+With LEAD() you can access values from subsequent row in the same result set. 
+
+SELECT
+broad_bean_origin AS bean_origin,
+rating,
+ROUND(cocoa_percent,2) AS cocoa_percent,
+ROUND(LEAD(cocoa_percent) OVER (ORDER BY rating),2) AS percent_lower_rating,
+ROUND(LAG(cocoa_percent) OVER (ORDER BY rating),2) AS percent_higher_rating
+FROM ratings
+WHERE company = 'Felchlin'
+ORDER BY rating ASC;
+
+

@@ -1,0 +1,401 @@
+
+Choosing the appropriate data type
+
+In a DB system, each column, local variable, expression, and parameter has a datatype.
+
+Categories of data types
+
+Exact numerics
+
+An exact numeric data type stores the literal representation of the number's value. 
+They are split into
+  --Whole numbers
+	Datatype	Storage
+	smallint	2 Bytes
+	tinyint		1 Byte 
+	int			4 Bytes
+	bigint		8 Bytes
+	
+	Integers hold numbers that are whole, or without a decimal point.
+	They are some of the most commonly used types, because they are efficient from a storage perspective
+	As a best practice we should use the smallest data type that can reliably contain all possible values of data. 
+	
+ --Decimal numbers
+    numeric
+	decimal
+	money
+	smallmoney
+	
+	Decimals are numeric types defined by precision and scale. 
+	
+	ex: 
+	1234567.675
+	
+	precision is the maximum total number of decimal digits that will be stored 
+	scale is the number of decimal digits stored to the right of the decimal point (here scale is 675)
+	
+	Note: The numeric data will occupy more or less storage on disk, depending on the precision we set. 
+
+
+
+Approximate numerics
+
+	Float
+	Real
+
+	They do not store the exact values specified for numbers, instead they store extremely close approximation of that value. 
+	These types should be used carefully and avoid using them in WHERE clause with equality operator as we will not get expected results 
+	
+
+Date and time
+
+We can use several types fo storing data and time information. The difference between them is in regards to the range of possible values and accuracy. 
+"Date" has the smallest accuracy while "datetime2" is the most exact. 
+
+Data type 			Format							Accuracy	
+time			hh:mm:ss[.nnnnnnn]					100 nanoseconds
+date			YYYY-MM-DD							1 day
+smalldatetime	YYYY-MM-DD hh:mm:ss					1 minute
+datetime		YYYY-MM-DD hh:mm:ss[.nnn]			0.00333 second
+datetime2		YYYY-MM-DD hh:mm:ss[.nnnnnnn]		100 nanoseconds
+
+
+
+
+Character strings
+
+Character types store strings.
+They vary in lenght and storage characteristics and are split in ASCII and Unicode types
+ASCII and Unicode are standards for representing characters in a computer. 
+ASCII types are used to store strings with English characters while Unicode are used to store characters from all languages around the world(like Japanese). 
+
+ASCII				Unicode
+
+char				nchar
+varchar				nvarchar
+text				ntext
+
+
+
+
+
+
+Unicode character strings
+Binary strings
+
+Other data types
+
+binary
+image
+cursor
+rowversion
+uniqueidentifier
+xml
+spatial / geography types
+
+
+Excercise
+
+Select information from the ratings table for the Belgian companies that received a rating higher than 3.5.
+
+SELECT company, company_location, bean_origin, cocoa_percent, rating
+FROM ratings
+WHERE company_location = 'Belgium'
+AND rating > 3.5
+
+
+
+Query the voters table where birthdate is greater than '1990-01-01' and the total_votes is between 100 and 200.
+
+
+SELECT 
+	first_name,
+	last_name,
+	birthdate,
+	gender,
+	email,
+	country,
+	total_votes
+FROM voters
+-- Birthdate > 1990-01-01, total_votes > 100 but < 200
+WHERE birthdate > '1990-01-01'
+  AND total_votes > 100
+  AND total_votes < 200;
+  
+  
+  another method
+  
+  SELECT first_name, last_name, birthdate, gender, email, country, total_votes
+FROM voters
+WHERE birthdate > '1990-01-01' AND total_votes BETWEEN 100 AND 200
+
+
+Storing dates in a database
+
+1) Add a new column with the correct data type, for storing the last date a person voted ("2018-01-17").
+
+we need to use date type.
+
+date			YYYY-MM-DD
+
+
+syntax
+
+ALTER TABLE table_name
+ADD column_name data_type
+
+
+ALTER TABLE voters
+ADD last_vote_date date;
+
+2) Add a new column called last_vote_time, to keep track of the most recent time when a person voted ("16:55:00").
+we need to use time data type
+
+ALTER TABLE voters
+ADD last_vote_time time
+
+
+3) Add a new column,last_login, storing the most recent time a person accessed the application ("2019-02-02 13:44:00").
+
+ALTER TABLE voters
+ADD last_login datetime2
+
+
+Implicit Conversion
+
+For comparing two values, they need to have the same data type. If they are different there are two options
+
+SQL Server converts from one type to another (Implicit conversion)
+If Implicit conversion is not possible, we need to explicitly convert the, using the functions CAST() or CONVERT() [Explicit conversion]
+
+Consider the following query
+
+SELECT 
+	company,
+	bean_type,
+	cocoa_percent
+FROM ratings;
+
+the "cocoa_percent" is a decimal column.
+
+When we add WHERE Clause. 
+
+SELECT 
+	company,
+	bean_type,
+	cocoa_percent
+FROM ratings
+WHERE cocoa_percent > 0.5;
+
+here we are comparing a decimal with decimal.
+
+comparing deciaml with integer is also possible. The following query will return the result.
+
+WHERE cocoa_percent >= 1;
+
+
+The following query will work and the "cocoa_percent" will be implicitly converted from decimal to datetime. 
+The value 0 corresponds to date "01-01-1900". 
+converting the number 365 to datetime will produce the date "01-01-1901"
+Adding 1 to the decimal number will add one day when it's converted to a datetime. 
+
+WHERE cocoa_percent > GETDATE();
+
+
+The following query will generate an error. Because the server cannot understand what we want to achieve by comapring the letter "A" to a decimal column. 
+WHERE cocoa_percent > 'A';
+
+Msg 8114, Level 16, State 5, Line 1
+Error converting data type varchar to float.
+
+However, when we compare the numbers within single quotes. i.e character. The query will be executed and return the result. 
+WHERE cocoa_percent >= '0.5';
+
+
+Thus for every comparison present in WHERE clause, the data type of the two operands is evaluated. 
+If they differ, SQL server will check if one can be automatically converted to another, without data loss. 
+This means, we cannot implicitly convert a decimal number to integer as we would lose the information after decimal point. 
+For this, a precedence list has been created with the order of the data types. 
+ref (microsoft document)
+
+
+Data type precedence
+
+user-defined data types (highest)
+datetime
+date
+float
+decimal
+int
+bit
+nvarchar (including nvarchar(max))
+varchar (including varchar(max))
+binary (lowest)
+
+
+Performance impact of implicit conversion
+
+Implicit conversion is done for each row of the query
+implicit conversion can be prevented with a good database schema design
+
+
+
+Explicit Conversion
+
+Implicit conversion - performed automatically by SQL Server, when values having different data types are compared to one another
+Explicit conversion - performed with the functions CAST() and CONVERT()
+
+CAST(expression AS data_type [(10)])
+
+we provide as a parameter for this function the expression we want to transform and the desired data type. if the new type allows it, we can specify the length for data. 
+
+some examples
+SELECT 
+CAST (3.14 AS int) AS Decimal_to_int,
+CAST('3.14' AS decimal(3,2)) AS string_to_decimal,
+CAST(GETDATE() AS nvarchar(20)) AS date_to_string,
+CAST(GETDATE() AS float) AS date_to_float;
+
+
+CONVERT() is similar to CAST() but it accepts more parameter, so the syntax is bit different
+CONVERT (data_type[(length)],expression [,style])
+first parameter is the data type, to which you can specify the lenght and second is the expression to be converted. There is an optional parameter for style, used mostly when manipulating dates. 
+The style parameter specifies how the result of CONVERT() function will be formatted. 
+
+
+SELECT
+CONVERT (INT, 3.14) AS decimal_to_int,
+CONVERT (decimal(3,2), '3.14') AS string_to_decimal,
+CONVERT (nvarchar(20), GETDATE(), 104) AS date_to_string,
+CONVERT (float, GETDATE()) AS date_to_float
+
+
+in the third example, the date is converted to string, the style parameter 104 is code for format 14.12.2021
+
+CAST VS CONVERT
+
+CAST() comes from the SQL standard and CONVERT() is SQL Server specific
+CAST() is available in most database products. when writing query that can be used in multiple platforms CAST should be used. 
+CONVERT() is slightly better as CAST() is converted to CONVERT() before executed. 
+
+
+Excercise for CAST
+
+1) Write a query that will show a message like the following, for each voter:
+Carol Rai was born in 1989.
+
+SELECT 
+	-- Transform the year part from the birthdate to a string
+first_name + ' ' + last_name +' was born in '+ CAST(YEAR(birthdate) AS nvarchar)+ '.'
+FROM voters;
+
+
+2) Divide the total votes by 5.5. Transform the result to an integer.
+
+SELECT 
+	-- Transform to int the division of total_votes to 5.5
+	CAST(total_votes/5.5 AS INT) AS DividedVotes
+FROM voters;
+
+3) Select the voters whose total number of votes starts with 5.
+
+SELECT 
+	first_name,
+	last_name,
+	total_votes
+FROM voters
+-- Transform the total_votes to char of length 10
+WHERE CAST(total_votes AS nvarchar(10)) LIKE '5%';
+
+
+
+Excercise for CONVERT
+
+Retrieve the birth date from voters, in this format: Mon dd,yyyy.
+
+SELECT 
+email,
+-- Convert birthdate to varchar show it like: "Mon dd,yyyy" 
+CONVERT(varchar, birthdate, 107) AS birthdate
+FROM voters;
+
+
+Select the company, bean origin and the rating from the ratings table. The rating should be converted to a whole number.
+
+SELECT 
+	company,
+    bean_origin,
+    -- Convert the rating column to an integer
+    CONVERT(INT,rating) AS rating
+FROM ratings;
+
+
+Select the company, bean origin and the rating from the ratings table where the whole part of the rating equals 3.
+
+SELECT 
+	company,
+    bean_origin,
+    rating
+FROM ratings
+-- Convert the rating to an integer before comparison
+WHERE CONVERT(INT,rating) = 3;
+
+
+Final Excercise
+Working with the correct data types
+It’s now time to practice your understanding of various data types in SQL Server and how to convert them from one type to another. In this exercise, you will query the voters table. Remember that this table holds information about the people who provided ratings for the different chocolate flavors.
+
+You are going to write a query that returns information (first name, last name, gender, country, number of times they voted) about the female voters from Belgium, who voted more than 20 times.
+
+You will work with columns of different data types and perform both implicit and explicit conversions between different types of data (using CAST() and CONVERT() functions).
+
+It sounds like a big query, but we will take it step-by-step and you will see the results in no time!
+
+
+Restrict the query to retrieve only the female voters who voted more than 20 times.
+
+SELECT 
+	first_name,
+	last_name,
+	gender,
+	country
+FROM voters
+WHERE country = 'Belgium'
+	-- Select only the female voters
+	AND gender = 'F'
+    -- Select only people who voted more than 20 times   
+    AND total_votes > 20;
+	
+Now that we have the data set prepared, let’s make it more user-friendly. Perform an explicit conversion from datetime to varchar(10), to show the dates as yy/mm/dd
+
+SELECT 
+	first_name,
+    last_name,
+	-- Convert birthdate to varchar(10) and show it as yy/mm/dd. This format corresponds to value 11 of the "style" parameter.
+	CONVERT(varchar(10), birthdate, 11) AS birthdate,
+    gender,
+    country
+FROM voters
+WHERE country = 'Belgium' 
+    -- Select only the female voters
+	AND gender = 'F'
+    -- Select only people who voted more than 20 times  
+    AND total_votes > 20;
+	
+Let’s now create a comments column that will show the number of votes performed by each person, in the following form: “Voted "x" times.”
+
+SELECT
+	first_name,
+    last_name,
+	-- Convert birthdate to varchar(10) to show it as yy/mm/dd
+	CONVERT(varchar(10), birthdate, 11) AS birthdate,
+    gender,
+    country,
+    -- Convert the total_votes number to nvarchar
+    'Voted ' + CAST(total_votes AS nvarchar) + ' times.' AS comments
+FROM voters
+WHERE country = 'Belgium'
+    -- Select only the female voters
+	AND gender = 'F'
+    -- Select only people who voted more than 20 times
+    AND total_votes > 20;

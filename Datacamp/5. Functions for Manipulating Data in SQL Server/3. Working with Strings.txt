@@ -1,0 +1,504 @@
+Functions for string positions
+
+Checks
+in practice, we have to validate that the lenght of a field does not exceed a certain maximum value
+Checks that an email address comes from a specific provider or find how many fields contain a certain expression
+
+LEN()
+LEN() is short for lenght. Returns the number of characters of the provided string, excluding blanks at the end.
+
+Syntax
+LEN(character_expression)
+
+Ex:
+
+SELECT 
+LEN('DO you know the lenght of this sentence') AS Length
+
+SELECT 
+LEN(email) AS email_length 
+FROM voters
+
+
+CHARINDEX()
+
+Looks for a character expression in a given string. Returns the starting position of the first occurrence.
+It has 2 mandatory parameters and 1 optional parameter. 
+The expression we are looking for, the string in which we do the search and a vlue expressing the starting position of the search.
+If the starting position is not specified, the search will start at the beginning. 
+
+Syntax
+CHARINDEX (expression_to_find, expression_to_search [, start_location])
+
+
+Ex:
+SELECT
+--without location parameter
+CHARINDEX('chocolate','white chocolate is not real chocolate') AS Charfirst,
+-- with location parameter
+CHARINDEX('chocolate','white chocolate is not real chocolate',10) AS Charsecond,
+-- search for different string
+CHARINDEX('chocolates', 'white chocolate is not real chocolate') AS nonexistentstring
+
+
+PATINDEX()
+
+similar to CHARINDEX(). Returns the starting position of first occurance of a patter in an expression.
+We can use wildcards in the expression we are looking for.
+
+PATINDEX('%pattern%', expression, [location])
+
+
+% - Match any string of any length(including zero length)
+_ - Match on a single character
+[] - Match on any character in the [] brackets (for example, [abc] would match on a, b or c characters)
+ 
+
+Example
+SELECT
+PATINDEX('%chocolate%','white chocolate is not real chocolate') AS Position1,
+PATINDEX ('%ch_c%', 'white chocolate is not real chocolate') AS Charsecond
+
+
+Excercise
+
+Restrict the query to select only the voters whose first name contains the expression "dan".
+
+SELECT 
+	first_name,
+	last_name,
+	email 
+FROM voters
+-- Look for the "dan" expression in the first_name
+WHERE CHARINDEX('dan',first_name) > 0;
+
+Restrict the query to select the voters with "dan" in the first_name and "z" in the last_name.
+
+SELECT 
+	first_name,
+	last_name,
+	email 
+FROM voters
+-- Look for the "dan" expression in the first_name
+WHERE CHARINDEX('dan', first_name) > 0 
+    -- Look for last_names that contain the letter "z"
+	AND CHARINDEX('z',last_name) > 0;
+	
+Restrict the query to select the voters with "dan" in the first_name and DO NOT have the letter "z" in the last_name.
+
+SELECT 
+	first_name,
+	last_name,
+	email 
+FROM voters
+-- Look for the "dan" expression in the first_name
+WHERE CHARINDEX('dan', first_name) > 0 
+    -- Look for last_names that do not contain the letter "z"
+	AND CHARINDEX('z',last_name) = 0;
+	
+	
+Write a query to select the voters whose first name contains the letters "rr".
+
+SELECT 
+	first_name,
+	last_name,
+	email 
+FROM voters
+-- Look for the "dan" expression in the first_name
+WHERE CHARINDEX('dan', first_name) > 0 
+    -- Look for last_names that do not contain the letter "z"
+	AND CHARINDEX('z',last_name) = 0;
+
+Write a query to select the voters whose first name starts with "C" and has "r" as the third letter.
+
+SELECT 
+	first_name,
+	last_name,
+	email 
+FROM voters
+-- Look for first names that start with C and the 3rd letter is r
+WHERE PATINDEX('C_r%',first_name) > 0;
+
+
+Select the voters whose first name contains an "a" followed by other letters, then a "w", followed by other letters.
+
+SELECT 
+	first_name,
+	last_name,
+	email 
+FROM voters
+-- Look for first names that have an "a" followed by 0 or more letters and then have a "w"
+WHERE PATINDEX('%a%w%',first_name) > 0;
+
+
+
+Write a query to select the voters whose first name contains one of these letters: "x", "w" or "q".
+
+SELECT 
+	first_name,
+	last_name,
+	email 
+FROM voters
+-- Look for first names that contain one of the letters: "x", "w", "q"
+WHERE PATINDEX('%[xwq]%',first_name)>0;
+
+---------------------------------------
+
+Functions for string transformation
+
+LOWER
+
+LOWER(character_expression) 
+
+Convertts all characters from a string to lowercase
+
+
+UPPER
+
+UPPER(character_expression)
+
+Converts all characters from a string to uppercase
+
+example
+
+SELECT country,
+LOWER(country) AS Lowername,
+UPPER(country) AS uppername
+FROM voters
+
+LEFT() and RIGHT()
+
+They receive two parameters. The string you're working with and the number of characters you need from it.
+
+LEFT(character_expression, number_of_characters)
+
+Returns the specified number of characters from the beginning of the string.
+
+RIGHT(character_expression, number_of_characters)
+
+Returns the specified number of characters from the end of the string.
+
+example
+
+SELECT country,
+email,
+LEFT(country,3) AS CountryPrefix,
+RIGHT(email,4) AS Maildomain
+FROM voters
+
+
+LTRIM() , RTRIM() and TRIM()
+
+These functions remove the blank character from string.
+
+LTRIM(character_expression)
+Returns a string after removing the leading blanks
+
+RTRIM(character_expression)
+Returns a string after removing the trailing blanks
+
+TRIM([characters FROM] character_expression)
+Returns a string after removing the blanks from both beginning and the end of the string. or other specified characters
+
+REPLACE()
+REPLACE(character_expression, searched_expression, replacement_expression)
+
+Returns a string where all occurrences of an expression are replaced with another one. 
+It receives three parameters, the expression in which we are performing the search, the expression we are searching for and then the replacement. 
+
+SELECT
+REPLACE('I like apples, apples are good,', 'apple', 'orange') AS result
+
+The result will be 
+I like oranges, oranges are good,
+
+
+SUBSTRING()
+
+If we want to return only a part of the string, then SUBSTRING() is the function.
+SUBSTRING(character_expression, start, number_of_characters)
+
+This function needs three parameters: the expression from which you want to extract the substring, the starting position of your substring and the total number of characters you want to return. 
+The counting starts from 1 and not from 0. 
+
+Excercise
+
+SELECT the information from voters table with left and right 
+
+SELECT 
+	first_name,
+	last_name,
+	country,
+    -- Select only the first 3 characters from the first name
+	LEFT(first_name, 3) AS part1,
+    -- Select only the last 3 characters from the last name
+    RIGHT(last_name, 3) AS part2,
+    -- Select only the last 2 digits from the birth date
+    RIGHT(birthdate,2) AS part3
+FROM voters;
+
+Select 5 characters from the email address, starting with position 3.
+
+SELECT 
+email,
+SUBSTRING(email,3,5) AS some_letters
+FROM voters;
+
+Extract the fruit names from the following sentence: "Apples are neither oranges nor potatoes".
+
+DECLARE @sentence NVARCHAR(200) = 'Apples are neither oranges nor potatoes.'
+SELECT
+	-- Extract the word "Apples" 
+	SUBSTRING(@sentence, 1, 6) AS fruit1,
+    -- Extract the word "oranges"
+	SUBSTRING(@sentence, 20, 7) AS fruit2;
+	
+	
+Replacing parts of a string
+
+Add a new column in the query in which you replace the "yahoo.com" in all email addresses with "live.com".
+
+SELECT 
+	first_name,
+	last_name,
+	email,
+	-- Replace "yahoo.com" with "live.com"
+	REPLACE(email,'yahoo.com','live.com') AS new_email
+FROM voters;
+
+Replace the character "&" from the company name with "and".
+
+SELECT 
+	company AS initial_name,
+    -- Replace '&' with 'and'
+	REPLACE(company,'&','and') AS new_name 
+FROM ratings
+WHERE CHARINDEX('&', company) > 0;
+
+
+Remove the string "(Valrhona)" from the company name "La Maison du Chocolat (Valrhona)".
+
+SELECT 
+	company AS old_company,
+    -- Remove the text '(Valrhona)' from the name
+	REPLACE(company, '(Valrhona)','') AS new_company,
+	bean_type,
+	broad_bean_origin
+FROM ratings
+WHERE company = 'La Maison du Chocolat (Valrhona)';
+
+
+
+------------------------------------------
+
+Functions Manipulating groups of Strings
+
+
+CONCAT() and CONCAT_WS()
+
+CONCAT(string1, string2[, stringN ]) 
+It joins values together. 
+
+
+CONCAT_WS (separator, string1, string2 [, stringN ])
+it joins values and also places separator. It receives a character value as first parameter, which is called "the separator". The separator will be introduced between strings. 
+
+
+You can concatenate a series of strings using these functions.
+Concatenating data with functions is better than using the "+" operator as using "+" might end up adding numerical data instead of concatenate
+Also + operator will concatenate only strings. While concatenate operator concatenates all data types. 
+
+Ex:
+
+SELECT
+CONCAT('Apples', 'and', 'oranges') AS result_concat,
+CONCAT_WS(' ', 'Apples', 'and', 'oranges') AS result_concat_ws,
+CONCAT_WS('***', 'Apples', 'and', 'oranges') AS result_concat_ws2
+
+Result
+
+Applesandoranges	Apples and oranges	Apples***and***oranges
+
+
+
+
+STRING_AGG()
+
+STRING_AGG(expression, separator) [<order_clause>]
+
+concatenates the value of string expressions and places separator values between them. 
+The separator is placed between each string but not at the end. 
+
+SELECT
+STRING_AGG(first_name,',') AS list_of_names
+FROM voters
+
+Result
+Carol,Ana,Melissa,Angela,Grace,Melody,Clinton,Kaylee,Dennis,Julia,Devin,Gabrielle,Jose,Seth,Clayton,Amy,Michele,Kurt,Sebastian,Trisha,Eugene,Cedric,Julie,Sandra,George,Alyssa,Richard,Cameron,Chloe,Nathan,Justin,Emma,Isabella,Patrick,Melissa,Mathew,Tabitha,Lloyd,Blake,Amanda,Jeffery,Evelyn,Wesley,Alexandra,Jose,Jacquelyn,Jessica,Savannah,Chase,Logan,Louis,Juan,Sean,Melvin,Morgan,Xavier,Barbara,Charles,Natasha,Willie,Byron,Isabella,Andy,Daniel,Daniel,Caroline,Christine,Roger,Calvin,Eric,Justin,Benjamin,Paige,James,Emma,Kaitlyn,Maria,Melissa,Kristopher,Priscilla,Alberto,Nancy,Kimberly,Richard,Christopher,Andrea,Jonathan,Darryl,Jamie,Rafael,Antonio,Kelvin,Haley,Victoria,Maria,Dennis,Kevin,Joshua,Connor,Tasha,Dawn,Meredith,Raul,Steve,Kara,Carl,Abigail,Mason,Ethan,Mariah,Joan,Jada,Whitney,Richard,Marcus,Mary,Terrence,Clarence,Margaret,Rachael,Karen,Orlando,Tony,Andres,Gina,Brandy,Max,Rafael,Morgan,Tiffany,Victoria,Dana,Lane,Theodore,Raymond,Carl,Grant,Lucas,Danny,Bailey,Victoria,Vincent,Micah,Micah,Harold,Micheal,Hector,Joan,Tyrone,Troy,Kendra,Ashlee,Jimmy,Jacquelyn,Anthony,Jose,Jason,Nicole,Jan,Clinton,Bridget,Isabella,Gregory,Bruce,Kaylee,Andrew,Seth,Bryan,Mackenzie,Philip,Derek,Mindy,Makayla,Dale,Darrell,Samuel,Carolyn,Savannah,Marco,Rebekah,Melissa,Arthur,Micheal,Alisha,April,Krista,Leah,Danny,Brett,Heather,Joe,Xavier,Allen,Alexa,Thomas,Victor
+
+
+Ex2
+
+SELECT
+STRING_AGG(CONCAT(first_name,' ', last_name, '(', first_vote_date, ')'), CHAR(13)) AS list_of_names
+FROM voters
+
+EX3
+
+STRING_AGG() with GROUP BY
+
+SELECT
+YEAR(first_vote_date) AS year_of_first_vote,
+STRING_AGG(first_name, ',') AS first_names
+FROM voters
+GROUP BY YEAR(first_vote_date)
+
+
+EX4
+
+STRING_AGG() with the optional <order_clause>
+
+SELECT
+YEAR(first_vote_date) AS year_of_first_vote,
+STRING_AGG(first_name, ',') WITHIN GROUP (ORDER BY first_name ASC) AS voters
+FROM voters
+GROUP BY YEAR(first_vote_date)
+
+Here after the STRING_AGG() function, you add the command: WITHIN GROUP and in parentheses and ORDER BY clause. 
+
+
+
+
+Creating string from parts and breaking a string into parts are common tasks in SQL Server.
+
+STRING_SPLIT() is the opposite of STRING_AGG(): it splits a bigger string into pieces based on a given separator. 
+
+STRING_SPLIT(string, separator)
+
+Returns a single column table. Because the result of the funciton is a table, it cannot be used as a column in SELECT clause, we can only use it the FROM clause, just like a normal table.
+
+SELECT *
+FROM STRING_SPLIT('1,2,3,4', ',')
+
+ 
+
+
+
+Excercise
+Concatenating data
+
+
+Create a message similar to this one: "Chocolate with beans from Belize has a cocoa percentage of 0.6400" for each result of the query.
+
+Create a message similar to this one: "Chocolate with beans from Belize has a cocoa percentage of 0.6400" for each result of the query.
+Use the + operator to concatenate data and the ' ' character as a separator.
+
+Create the same message, using the CONCAT() function.
+
+Create the same message, using the CONCAT_WS() function. Evaluate the difference between this method and the previous ones.
+	
+	DECLARE @string1 NVARCHAR(100) = 'Chocolate with beans from';
+DECLARE @string2 NVARCHAR(100) = 'has a cocoa percentage of';
+
+SELECT 
+	bean_type,
+	bean_origin,
+	cocoa_percent,
+	-- Create a message by concatenating values with "+"
+	@string1 + ' ' + bean_origin + ' ' + @string2 + ' ' + CAST(cocoa_percent AS nvarchar) AS message1,
+	-- Create a message by concatenating values with "CONCAT()"
+	CONCAT(@string1, ' ', bean_origin, ' ', @string2, ' ', cocoa_percent) AS message2,
+	-- Create a message by concatenating values with "CONCAT_WS()"
+	CONCAT_WS(' ', @string1, bean_origin, @string2, cocoa_percent) AS message3
+FROM ratings
+WHERE 
+	company = 'Ambrosia' 
+	AND bean_type <> 'Unknown';
+	
+	
+	------------------
+	
+Aggregating strings
+
+
+Create a list with all the values found in the bean_origin column for the companies: 'Bar Au Chocolat', 'Chocolate Con Amor', 'East Van Roasters'. The values should be separated by commas (,).
+
+SELECT
+	-- Create a list with all bean origins, delimited by comma
+	STRING_AGG(bean_origin, ',') AS bean_origins
+FROM ratings
+WHERE company IN ('Bar Au Chocolat', 'Chocolate Con Amor', 'East Van Roasters');
+
+Create a list with the values found in the bean_origin column for each of the companies: 'Bar Au Chocolat', 'Chocolate Con Amor', 'East Van Roasters'. The values should be separated by commas (,).
+
+SELECT 
+	company,
+    -- Create a list with all bean origins
+	STRING_AGG(bean_origin, ',') AS bean_origins
+FROM ratings
+WHERE company IN ('Bar Au Chocolat', 'Chocolate Con Amor', 'East Van Roasters')
+-- Specify the columns used for grouping your data
+GROUP BY company;
+
+
+Arrange the values from the list in alphabetical order.
+
+SELECT 
+	company,
+    -- Create a list with all bean origins ordered alphabetically
+	STRING_AGG(bean_origin, ',') WITHIN GROUP (ORDER BY bean_origin) AS bean_origins
+FROM ratings
+WHERE company IN ('Bar Au Chocolat', 'Chocolate Con Amor', 'East Van Roasters')
+-- Specify the columns used for grouping your data
+GROUP BY company;
+
+Splitting a string into pieces
+
+Split the phrase declared in the variable @phrase into sentences (using the . separator).
+
+DECLARE @phrase NVARCHAR(MAX) = 'In the morning I brush my teeth. In the afternoon I take a nap. In the evening I watch TV.'
+
+SELECT value
+FROM STRING_SPLIT(@phrase, '.');
+
+
+
+Split the phrase declared in the variable @phrase into individual words.
+
+DECLARE @phrase NVARCHAR(MAX) = 'In the morning I brush my teeth. In the afternoon I take a nap. In the evening I watch TV.'
+
+SELECT value
+FROM STRING_SPLIT(@phrase,' ');
+
+
+
+Applying various string functions on data
+
+Select only the voters whose first name has fewer than 5 characters and 
+email address meets these conditions in the same time: (1) starts with the letter “j”, 
+(2) the third letter is “a” and (3) is created at yahoo.com.
+
+
+SELECT first_name, last_name, birthdate, email,country
+FROM voters
+-- Select only voters with a first name less than 5 characters
+WHERE LEN(first_name) < 5
+ -- Look for the desired pattern in the email address
+AND PATINDEX('j_a%yahoo.com',email) > 0
+
+
+
+Mask the year part from the birthdate column, by replacing the last two digits with "XX" (1986-03-26 becomes 19XX-03-26).
+
+SELECT
+    -- Concatenate the first and last name
+	CONCAT('***' , first_name, ' ', UPPER(last_name), '***') AS name,
+    -- Mask the last two digits of the year
+    REPLACE(birthdate, SUBSTRING(CAST(birthdate AS varchar), 3, 2), 'XX') AS birthdate,
+	email,
+	country
+FROM voters
+   -- Select only voters with a first name less than 5 characters
+WHERE LEN(first_name) < 5
+   -- Look for this pattern in the email address: "j%[0-9]@yahoo.com"
+	AND PATINDEX('j_a%@yahoo.com', email) > 0;    

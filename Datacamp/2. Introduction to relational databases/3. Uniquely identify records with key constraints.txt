@@ -1,0 +1,262 @@
+Key constraints
+
+What is a key
+
+Typically a database table has an attribute, or a combination of multiple attributes, whose values are unique across the whole table. Such attributes identify a record uniquely. 
+Normally, a table, as a whole, only contains unique records. Meaning that the combination of all attributes is a key in itself. However it's not called a key, but a superkey, if attributes of that combination can be removed, and the attributes still uniquely identify records. 
+If all possible attributes are removed but the records are still uniquely identifiable by the remaining attributes, we speak of a minimal superkey. This is the actual key. A key is always minimal.
+The minimal superkeys are called candidate keys. At the end, only one can be chosen as key for the table. This has to be chosen from the candidates. 
+
+
+Consider a scenario
+
+you don't know which columns or combinations of columns are suited as keys. There's a simple way of finding out whether a certain column (or a combination) contains only unique values – and thus identifies the records in the table.
+We have to wrap the SELECT DISTINCT query within the COUNT() function and we can see the unique rows of given columns. 
+
+SELECT COUNT(DISTINCT(column_a, column_b, ...))
+FROM table;
+
+
+Example
+
+Get to know SELECT COUNT DISTINCT
+
+Find out the number of rows in universities table.
+
+-- Count the number of rows in universities
+SELECT COUNT(*)
+FROM universities;
+
+find out how many unique values there are in the university_city column.
+
+-- Count the number of distinct values in the university_city column
+SELECT COUNT(DISTINCT(university_city)) 
+FROM universities;
+
+
+Identify keys with SELECT COUNT DISTINCT
+There's a very basic way of finding out what qualifies for a key in an existing, populated table:
+
+Count the distinct records for all possible combinations of columns. 
+If the resulting number x equals the number of all rows in the table for a combination, you have discovered a superkey.
+
+Then remove one column after another until you can no longer remove columns without seeing the number x decrease. 
+If that is the case, you have discovered a (candidate) key.
+
+The table professors has 551 rows. It has only one possible candidate key, which is a combination of two attributes.
+
+
+-- Try out different combinations
+SELECT COUNT(DISTINCT(firstname,lastname,university_shortname)) 
+FROM professors;
+
+Result
+
+count
+551
+
+-- Try out different combinations
+SELECT COUNT(DISTINCT(firstname,lastname)) 
+FROM professors;
+
+Result
+
+count
+551
+
+
+-- Try out different combinations
+SELECT COUNT(DISTINCT(firstname)) 
+FROM professors;
+
+count
+360
+
+
+So, here we can confirm that the combination of firstname and lastname is a key. since remove lastname reduces the count of rows
+
+
+Primay Keys
+
+One primary key per database table, chosen from candidate keys
+Primary keys need to be defined on columns that don't accept duplicate or null values. 
+It should uniquely identifies records, e.g for referencing in other tables. 
+Unique and not-constraints both apply to primary keys
+Primary keys are time-invariant. Meaning that they must hold for current data in the table but also for any future data that the table might hold. 
+so choose the primary key column wisely.
+Specifying PRIMARY KEY upon table creation is very easy.  
+
+ex:
+
+CREATE TABLE tablename(
+col_a integer
+col_b PRIMARY KEY
+);
+
+If we want two columns to be primary key. Note that, it is still one primary key but formed in combination of two columns. 
+Ideally though PRIMARY KEY consists of few columns as possible. Best is to have 1 column as PRIMARY KEY. 
+
+CREATE TABLE table_name (
+col_a INTEGER
+PRIMARY KEY (col_b, col_c)
+);
+
+
+Adding primary key constraint to existing column is similar as adding unique constraint. 
+
+ALTER TABLE table_name
+ADD CONSTRAINT constraint_name PRIMARY KEY (column_name)
+
+Examples
+
+
+ADD key CONSTRAINTs to the tables
+Two of the tables in your database already have well-suited candidate keys consisting of one column each: organizations and universities
+ with the organization and university_shortname columns, respectively.
+ 
+ rename these columns to id using the RENAME COLUMN command and then specify primary key constraints for them. 
+ This is as straightforward as adding unique constraints
+ 
+ Step1:
+ Rename the organization column to id in organizations.
+ Make id a primary key and name it organization_pk.
+ 
+ 
+ -- Rename the organization column to id
+ALTER TABLE organizations
+RENAME COLUMN organization TO id;
+
+-- Make id a primary key
+ALTER TABLE organizations
+ADD CONSTRAINT organization_pk PRIMARY KEY (id);
+
+
+Step2:
+
+Rename the university_shortname column to id in universities.
+Make id a primary key and name it university_pk.
+
+-- Rename the university_shortname column to id
+ALTER TABLE universities
+RENAME COLUMN university_shortname TO id;
+
+-- Make id a primary key
+ALTER TABLE universities
+ADD CONSTRAINT university_pk PRIMARY KEY(id);
+
+
+
+Surrogate keys
+
+Surrogate keys are sort of artifical primary key on data.
+In other words they are not based on native column in data but on a column that just exists for sake having a primary key. 
+There are several ways of constructing a surrogate key. 
+SERIAL is a datatype that allows the addition of auto-incrementing numbers to an existing table. It is specified just like any other data type. 
+Once we add a column with the "SERIAL" type, all the records in the table will be numbered. 
+Whenever we add a new record to the table, it will automatically get a number taht does not exist yet. 
+Another strategy for creatign a surrogate key is to combine two existing columns into a new one. 
+
+
+Add a SERIAL surrogate key
+
+Since there's no single column candidate key in professors (only a composite key candidate consisting of firstname, lastname), 
+you'll add a new column id to that table.
+
+This column has a special data type serial, which turns the column into an auto-incrementing number. 
+This means that, whenever you add a new professor to the table, 
+it will automatically get an id that does not exist yet in the table: a perfect primary key!
+
+
+Add a new column id with data type serial to the professors table.
+
+-- Add the new column to the table
+ALTER TABLE professors
+ADD COLUMN id SERIAL;
+
+
+Make id a primary key and name it professors_pkey.
+
+-- Make id a primary key
+ALTER TABLE professors
+ADD CONSTRAINT professors_pkey PRIMARY KEY (id);
+
+Write a query that returns all the columns and 10 rows from professors.
+
+-- Have a look at the first 10 rows of professors
+SELECT * FROM professors
+LIMIT 10;
+
+
+
+CONCATenate columns to a surrogate key
+
+Another strategy to add a surrogate key to an existing table is to concatenate existing columns with the CONCAT() function.
+
+Let's think of the following example table:
+
+CREATE TABLE cars (
+ make varchar(64) NOT NULL,
+ model varchar(64) NOT NULL,
+ mpg integer NOT NULL
+)
+
+The table is populated with 10 rows of completely fictional data.
+
+Unfortunately, the table doesn't have a primary key yet. 
+None of the columns consists of only unique values, so some columns can be combined to form a key.
+
+combine make and model into such a surrogate key.
+
+Steps
+
+Count the number of distinct rows with a combination of the make and model columns.
+
+-- Count the number of distinct rows with columns make, model
+SELECT COUNT (DISTINCT (make,model))
+FROM cars;
+
+Add a new column id with the data type varchar(128).
+
+-- Add the id column
+ALTER TABLE cars
+ADD COLUMN id VARCHAR(128);
+
+Concatenate make and model into id using an UPDATE table_name SET column_name = ... query and the CONCAT() function.
+
+-- Update id with make + model
+UPDATE cars
+SET id = CONCAT(make, model);
+
+
+Make id a primary key and name it id_pk.
+
+-- Make id a primary key
+ALTER TABLE cars
+ADD CONSTRAINT id_pk PRIMARY KEY(id);
+
+-- Have a look at the table
+SELECT * FROM cars;
+
+
+Test your knowledge before advancing
+Before you move on to the next chapter, 
+let's quickly review what you've learned so far about attributes and key constraints. 
+
+
+Let's think of an entity type "student". A student has:
+
+a last name consisting of up to 128 characters (required),
+a unique social security number, consisting only of integers, that should serve as a key,
+a phone number of fixed length 12, consisting of numbers and characters (but some students don't have one).
+
+Instruction
+
+Given the above description of a student entity, create a table students with the correct column types.
+Add a PRIMARY KEY for the social security number ssn.
+Note that there is no formal length requirement for the integer column. The application would have to make sure it's a correct SSN!
+
+CREATE TABLE student (
+ last_name VARCHAR(128)
+ ssn INTEGER PRIMARY KEY
+ phone_number CHAR(12)
+)

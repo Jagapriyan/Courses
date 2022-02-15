@@ -1,0 +1,249 @@
+The main idea of a database is to push data into a certain structure - a predefined model, where you enforce data types, relationships and other rules. 
+Generally these rules are called integrity constraints, although different names exists. 
+
+1) Attribute constraints e.g data types on columns
+2) key constraints e.g primary keys
+3) Referential integrity constraints, enforced through foriegn keys
+
+Why Constraints?
+
+Constraints give the data structure
+Constraints help with consistency, and thus data quality. 
+Data quality is a business advantage / data science prerequisite. 
+
+
+Attribute Constraints
+
+In simple form attribute constraints determines the data types on columns
+There are basic data types for numbers such as "bigint" or strings of characters, such as "character varying".
+There are also more high-level data types like "cidr", which can be used for ip addressess. This will restrict any input that doesn't fit the structure of an ip address.
+Data types also restrict possible SQL operations on stored data. 
+
+Table created with following details
+
+CREATE TABLE transactions (
+ transaction_date date, 
+ amount integer,
+ fee text
+);
+
+
+-- Let's add a record to the table
+INSERT INTO transactions (transaction_date, amount, fee) 
+VALUES ('2018-12-09', 5454, '30');
+
+-- Doublecheck the contents
+SELECT *
+FROM transactions;
+
+
+Type cast
+
+If you know that a certain column stores numbers as text, you can cast the column to a numeric form, i.e. to integer.
+
+SELECT CAST(some_column AS integer)
+FROM table;
+
+Now, the some_column column is temporarily represented as integer instead of text, meaning that you can perform numeric calculations on the column.
+
+-- Calculate the net amount as amount + fee
+SELECT transaction_date, amount + CAST(fee AS INTEGER) AS net_amount
+FROM transactions;
+
+
+Working with Datatypes
+
+Enforced on columns(i.e attributes)
+Define the so-called "domain" of a column. 
+Define what operations are possible. 
+Enforce consistent storage of values. 
+
+
+The most common types
+
+text: character strings of any length
+varchar[(x)]: a maximum of n characters
+char [(x)]: a fixed length of string of n characters.
+boolean: can only take three states. e.g TRUE, FALSE, NULL(unknown)
+date, time and timestamp: various formats for date and time calculations
+numeric: arbitrary precision numbers, e.g 3.1457
+integer: whole nummbers in range of -2147483648 and +2147483647
+
+
+Example usage
+
+
+CREATE TABLE students (
+
+aadhar integer,
+name varchar(64),
+dob date,
+average_grade numeric(3,2), --e.g: 5.54
+tution_paid boolean
+)
+
+
+ALTER TYPES after table creation
+
+
+ALTER TABLE students
+ALTER COLUMN name
+TYPE varchar(128);
+
+Sometimes it may be necessary to truncate column values or transform them in any other way, so they fit with the new data type. 
+Then we can use the "USING" keyword, and specify a transformation that should happen before the type is altered. 
+
+ALTER TABLE students
+ALTER COLUMN average_grade
+TYPE integer
+USING ROUND(average_grade);
+
+
+Change the column lenght to 3 and character type. 
+ex:
+
+-- Specify the correct fixed-length character type
+ALTER TABLE professors
+ALTER COLUMN university_shortname
+TYPE CHAR(3);
+
+Change the type of the firstname column to varchar(64).
+
+-- Change the type of firstname
+ALTER TABLE professors
+ALTER COLUMN firstname
+TYPE varchar(64);
+
+
+Convert type USING a function. 
+
+Now use SUBSTRING() to reduce firstname to 16 characters so its type can be altered to varchar(16).
+
+-- Convert the values in firstname to a max. of 16 characters
+ALTER TABLE professors 
+ALTER COLUMN firstname 
+TYPE varchar(16)
+USING substring(firstname FROM 1 FOR 16)
+
+
+Not-Null and Unique Constraints
+
+The not-null constraint
+
+Disallow NULL values in a certain column
+Must hold true for the current state 
+Must hold true for any future state as well. We cannot insert any NULL values.
+
+What does NULL mean?
+
+The value is unknown  
+The value does not exist 
+The value does not apply to the column
+
+Consider a CREATE TABLE statement
+
+CREATE TABLE students (
+ssn INTEGER NOT NULL,
+first_name VARCHAR(64) NOT NULL,
+home_phone INTEGER,
+office_phone INTEGER
+);
+
+
+here, the home_phone and office_phone can accept NULL values for any of the following reason
+
+Student might not have phone at all
+Student might not have office 
+phone number field does not apply to students. 
+
+Here NULL may appear in a field due to any of the above reasons. 
+So it is not right way to compare NULL with NULL. 
+
+NULL != NULL always. It will return FALSE
+
+
+How to add or remove a NOT-NULL constraint
+
+Example add
+
+ALTER TABLE students
+ALTER COLUMN home_phone
+SET NOT NULL;
+
+
+Example Remove
+
+ALTER TABLE students
+ALTER COLUMN ssn
+DROP NOT NULL;
+
+
+
+The Unique constraint
+
+Disallow duplicate values in a column
+Must hold true for the current state
+Must hold true for any future state
+
+
+How to add UNIQUE Constraint
+
+CREATE TABLE table_name (
+	column_name UNIQUE
+
+);
+
+
+ALTER TABLE table_name
+ADD CONSTRAINT some_name UNIQUE(column_name);
+
+Note that this is different from the ALTER COLUMN syntax for the not-null constraint. Also, you have to give the constraint a name some_name.
+
+
+Examples
+
+Disallow NULL values with SET NOT NULL
+The professors table is almost ready now.
+ However, it still allows for NULLs to be entered. 
+ Although some information might be missing about some professors, there's certainly columns that always need to be specified.
+ 
+ Add a not-null constraint for the firstname column.
+ 
+ALTER TABLE professors
+ALTER COLUMN firstname
+SET NOT NULL;
+
+
+Add a not-null constraint for the lastname column.
+
+-- Disallow NULL values in lastname
+ALTER TABLE professors
+ALTER COLUMN lastname
+SET NOT NULL;
+
+
+Make your columns UNIQUE with ADD CONSTRAINT
+
+
+Add a unique constraint to the university_shortname column in universities. Give it the name university_shortname_unq.
+
+
+
+-- Make universities.university_shortname unique
+ALTER TABLE universities
+ADD CONSTRAINT UNIQUE UNIQUE(university_shortname) AS university_shortname_unq
+
+-- Make universities.university_shortname unique
+ALTER TABLE universities
+ADD CONSTRAINT university_shortname_unq UNIQUE(university_shortname) 
+
+
+
+Add a unique constraint to the organization column in organizations. Give it the name organization_unq.
+
+-- Make organizations.organization unique
+ALTER TABLE organizations
+ADD CONSTRAINT organization_unq UNIQUE(organization);
+
+
+

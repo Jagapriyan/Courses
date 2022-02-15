@@ -1,0 +1,267 @@
+While Loop
+
+This section, we are going to review modifying the data by creating variables and using them in WHILE loop.
+
+Variable Declaration
+
+DECLARE @variablename data_type
+
+
+
+The most common data types are VARCHAR, INT and Decimal. 
+
+VARCHAR(n): Variable length text field. 
+INT: integer values from -2147483647 to -2147483647
+DECIMAL(p,s) or NUMERIC(p,s):
+p: total number of decimal digits that will be stored, both to the left and to the right of the decimal point. 
+s: number of decimal digits that will be stored to the right of the decimal point. 
+
+
+Ex:
+-- Declare the variable
+DECLARE @snack VARCHAR(10)
+-- Use SET a value to the variable. We can use SET or SELECT to set a value to the variable. 
+SET @snack = 'Cookies'
+SELECT @snack = 'Candy'
+-- Show the value
+SELECT @snack
+
+WHILE Loops
+
+WHILE evaluates a true or false condition
+After the WHILE, there should be a line with the keyword BEGIN
+Next include code to run until the condition in the WHILE loop is true. 
+After the code add the keyword END. 
+BREAK will cause an exit out of the loop. 
+CONTINUE will cause the loop to continue. 
+
+Syntax
+
+WHILE Condition
+BEGIN
+	Code to execute
+END
+
+
+Ex
+
+--Declare variable
+DECLARE @ctr INT
+-- Set variable
+SET @ctr = 1
+--- While loop
+WHILE @ctr < 10
+BEGIN
+	SET @ctr = @ctr+1
+END
+SELECT @ctr
+
+
+This code will give the result for ctr as 10. 
+
+EX will BREAK 
+
+--Declare variable
+DECLARE @ctr INT
+-- Set variable
+SET @ctr = 1
+--- While loop
+WHILE @ctr < 10
+BEGIN
+	SET @ctr = @ctr+1
+	IF
+		@ctr = 4
+	BREAK
+END
+SELECT @ctr
+
+This code will give the result for ctr as 4. 
+
+
+Exercise
+
+1) 
+Create an integer variable named counter.
+Assign the value 20 to this variable.
+
+-- Declare the variable (a SQL Command, the var name, the datatype)
+DECLARE @counter INT
+
+-- Set the counter to 20
+SET @counter = 20
+
+-- Select the counter
+SELECT @counter
+
+2)
+Increment the variable counter by 1 and assign it back to counter.
+
+-- Select and increment the counter by one 
+SET @counter = @counter + 1
+-- Print the variable
+SELECT @counter
+
+Creating a WHILE loop
+
+In this exercise, you will use the variable you created in the previous exercise you write a WHILE loop.
+
+ Recall that structure:
+
+WHILE some_condition 
+
+BEGIN 
+    -- Perform some operation here
+END
+
+Write a WHILE loop that increments counter by 1 until counter is less than 30.
+
+-- Create a loop
+WHILE @counter < 30
+-- Loop code starting point
+BEGIN
+	SELECT @counter = @counter + 1
+-- Loop finish
+END
+
+-- Check the value of the variable
+SELECT @counter
+
+
+---------------------------------------------------------------------
+
+Derived Tables
+
+Derived tables are another name for a query acting as a table and are commonly used to do aggregations in T-SQL
+We can use derived table when we want to break down a complex query into a smaller steps. 
+Query which is treated like a temporary table. 
+Always contained within the main query
+They are specified in the FROM clause
+Can contain intermediate calculations to be used the main query or different joins than in the main query. 
+
+Exercise
+
+In this exercise, you will calculate the maximum value of the blood glucose level for each record by age.
+
+
+Return MaxGlucose from the derived table.
+Join the derived table to the main query on Age.
+
+
+recordid, age, bloodglucose random, max(bloodglucose)
+
+
+SELECT a.RecordID, a.Age, a.BloodGlucoseRandom,
+-- Select maximum glucose value (use colname from derived table)    
+       b.MaxGlucose
+FROM Kidney a
+-- Join to derived table
+JOIN (SELECT Age, MAX(BloodGlucoseRandom) AS MaxGlucose FROM Kidney GROUP BY Age) b
+-- Join on Age
+ON 
+a.Age = b.Age
+
+
+Queries with derived tables (II)
+In this exercise, you will create a derived table to return all patient records with the highest BloodPressure at their Age level.```
+
+```
+
+Create a derived table
+returning Age and MaxBloodPressure; the latter is the maximum of BloodPressure.
+is taken from the kidney table.
+is grouped by Age.
+Join the derived table to the main query on
+blood pressure equal to max blood pressure.
+age.
+
+
+
+SELECT *
+FROM Kidney a
+-- Create derived table: select age, max blood pressure from kidney grouped by age
+JOIN
+(SELECT Age, MAX(BloodPressure) AS MaxBloodPressure FROM Kidney GROUP BY Age) b
+-- JOIN on BloodPressure equal to MaxBloodPressure
+ON
+a.BloodPressure = b.MaxBloodPressure
+-- Join on Age
+AND
+a.Age = b.Age
+
+
+-------------------------------------------------------------
+
+
+Common Table Expressions
+
+They are commonly known as CTEs are another type of derived table.
+They are little different and can be used multiple times in a query and are defined like a table. 
+A CTE acts lot like a table which is defined before you use it. 
+Once you define the CTE, then you can use it in the query following the CTE, as if it was a table. 
+When creating a CTE, you specify the keyword WITH, followed by the CTE name, then a list of clolumns it contains. 
+The column names must match with the columns in query
+
+--CTE definitions start with the keyword WITH
+-- Followed by the CTE names and the columns it contains. 
+
+WITH CTEName (Col1,Col2)
+AS
+--Define the CTE query
+(
+
+SELECT Col1,Col2
+FROM TableName
+
+)
+
+
+Example
+
+The following example finds the maximum and minimum blood pressure for each age
+
+-- Create CTE
+WITH MaxbloodpressureAge(Age, Maxbloodpressure)
+AS
+(SELECT Age, MAX(BloodPressure) AS Maxbloodpressure FROM ChronicKidneyDisease GROUP BY Age)
+-- Use CTE In query
+SELECT a.Age, MIN(a.BloodPressure) AS Minbloodpressure, b.Maxbloodpressure
+FROM ChronicKidneyDisease a
+JOIN MaxbloodpressureAge b
+ON a.Age = b.Age
+GROUP BY a.Age, b.Maxbloodpressure
+
+
+Excercise
+
+In this exercise, you will use a CTE to return all the ages with the maximum BloodGlucoseRandom in the table
+
+Create a CTE BloodGlucoseRandom that returns one column (MaxGlucose) which contains the maximum BloodGlucoseRandom in the table.
+Join the CTE to the main table (Kidney) on BloodGlucoseRandom and MaxGlucose.
+
+
+-- Specify the keyowrds to create the CTE
+WITH BloodGlucoseRandom (MaxGlucose) 
+AS (SELECT MAX(BloodGlucoseRandom) AS MaxGlucose FROM Kidney)
+
+SELECT a.Age, b.MaxGlucose
+FROM Kidney a
+-- Join the CTE on blood glucose equal to max blood glucose
+JOIN BloodGlucoseRandom b
+ON a.BloodGlucoseRandom = b.MaxGlucose
+
+
+Creating CTEs (II)
+In this exercise, you will use a CTE to return all the information regarding the patient(s) with the maximum BloodPressure.
+
+
+Create a CTE BloodPressure that returns one column (MaxBloodPressure) which contains the maximum BloodPressure in the table.
+Join this CTE (using an alias b) to the main table (Kidney) to return information about patients with the maximum BloodPressure.
+
+-- Create CTE
+WITH Maxbloodpressure 
+AS (SELECT MAX(BloodPressure) AS MaxBP FROM ChronicKidneyDisease)
+-- Use CTE in query
+SELECT a.* , b.MaxBP
+FROM ChronicKidneyDisease a
+JOIN Maxbloodpressure b
+ON a.BloodPressure = b.MaxBP
